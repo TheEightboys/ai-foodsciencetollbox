@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Generation Limit Reached - {{ site_name }}</title>
+</head>
+<body>
+    <h1>Generation Limit Reached</h1>
+    <p>Hello {{ user.first_name }},</p>
+    <p>You've reached your monthly content generation limit for your current {{ site_name }} plan.</p>
+    <p>To continue creating amazing educational content for your students, consider upgrading to our Pro plan which offers:</p>
+    <ul>
+        <li>Unlimited content generation</li>
+        <li>Priority support</li>
+        <li>Access to premium features</li>
+    </ul>
+    <p><a href="{{ frontend_url }}/pricing" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Upgrade Now</a></p>
+    <p>Your generation limit will reset on the first day of the next month.</p>
+    <p>Thank you for being a valued {{ site_name }} user!</p>
+    <p>The {{ site_name }} Team</p>
+</body>
+</html>

@@ -1,0 +1,219 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Food Science Toolbox branding palette */
+    --background: 210 20% 98%;
+    --foreground: 210 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 25% 15%;
+
+    /* Primary Blue: #1464A0 */
+    --primary: 204 78% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Soft blue-gray secondary */
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 204 50% 30%;
+
+    /* Muted tones */
+    --muted: 210 15% 94%;
+    --muted-foreground: 210 10% 45%;
+
+    /* Primary Green: #287814 */
+    --accent: 108 71% 27%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Secondary Green: #78B450 */
+    --success: 96 42% 51%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 210 25% 15%;
+
+    --border: 210 15% 88%;
+    --input: 210 15% 88%;
+    --ring: 204 78% 35%;
+
+    --radius: 0.75rem;
+
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(204 78% 35%) 0%, hsl(204 78% 45%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(108 71% 27%) 0%, hsl(96 42% 51%) 100%);
+    --gradient-soft: linear-gradient(180deg, hsl(210 20% 98%) 0%, hsl(210 15% 94%) 100%);
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%) 0%, hsl(210 20% 98%) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 hsl(210 25% 15% / 0.05);
+    --shadow-md: 0 4px 6px -1px hsl(210 25% 15% / 0.08), 0 2px 4px -2px hsl(210 25% 15% / 0.05);
+    --shadow-lg: 0 10px 15px -3px hsl(210 25% 15% / 0.08), 0 4px 6px -4px hsl(210 25% 15% / 0.05);
+    --shadow-glow: 0 0 20px hsl(204 78% 35% / 0.2);
+
+    /* Sidebar */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 210 25% 15%;
+    --sidebar-primary: 204 78% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 96%;
+    --sidebar-accent-foreground: 210 25% 15%;
+    --sidebar-border: 210 15% 90%;
+    --sidebar-ring: 204 78% 35%;
+  }
+
+  .dark {
+    --background: 210 20% 10%;
+    --foreground: 210 20% 95%;
+
+    --card: 210 18% 14%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 210 18% 14%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 204 70% 50%;
+    --primary-foreground: 210 25% 10%;
+
+    --secondary: 210 15% 18%;
+    --secondary-foreground: 210 20% 85%;
+
+    --muted: 210 15% 20%;
+    --muted-foreground: 210 10% 60%;
+
+    --accent: 108 60% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --success: 96 45% 55%;
+    --success-foreground: 0 0% 100%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 15% 22%;
+    --input: 210 15% 22%;
+    --ring: 204 70% 50%;
+
+    --sidebar-background: 210 18% 12%;
+    --sidebar-foreground: 210 15% 85%;
+    --sidebar-primary: 204 70% 50%;
+    --sidebar-primary-foreground: 210 25% 10%;
+    --sidebar-accent: 210 15% 18%;
+    --sidebar-accent-foreground: 210 15% 90%;
+    --sidebar-border: 210 15% 20%;
+    --sidebar-ring: 204 70% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Nunito Sans', 'Inter', system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Nunito Sans', system-ui, sans-serif;
+    font-weight: 700;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .gradient-soft {
+    background: var(--gradient-soft);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-md);
+  }
+
+  .shadow-card-hover {
+    box-shadow: var(--shadow-lg);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Grid background pattern */
+  .bg-grid-white\/\[0\.02\] {
+    background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}

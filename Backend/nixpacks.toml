@@ -1,0 +1,19 @@
+[phases.setup]
+nixPkgs = ["python311", "python311Packages.pip", "python311Packages.setuptools", "python311Packages.wheel", "netcat"]
+
+[phases.install]
+cmds = [
+  "python -m venv /opt/venv && /opt/venv/bin/pip install --upgrade pip setuptools wheel && /opt/venv/bin/pip install -r requirements.txt"
+]
+
+[phases.build]
+cmds = [
+  "chmod +x start.sh || true",
+  "chmod +x /app/start.sh || true",
+  "cd /app/Backend || cd /app || true",
+  "echo 'Build phase complete - static files will be collected at startup'"
+]
+
+[start]
+cmd = "bash /app/start.sh"
+

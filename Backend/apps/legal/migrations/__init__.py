@@ -1,0 +1,2 @@
+# Legal app migrations
+

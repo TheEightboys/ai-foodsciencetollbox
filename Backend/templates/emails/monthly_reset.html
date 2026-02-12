@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Monthly Usage Reset - {{ site_name }}</title>
+</head>
+<body>
+    <h1>Monthly Usage Reset</h1>
+    <p>Hello {{ user.first_name }},</p>
+    <p>Your {{ site_name }} monthly content generation limit has been reset!</p>
+    <p>You can now generate new content for your students. This month, you have:</p>
+    <ul>
+        <li>{{ user.membership.tier.generation_limit|default:"Unlimited" }} content generations available</li>
+    </ul>
+    <p>We hope you continue to find value in {{ site_name }} and that it helps you create engaging educational experiences for your students.</p>
+    <p>Happy teaching!</p>
+    <p>The {{ site_name }} Team</p>
+</body>
+</html>

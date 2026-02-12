@@ -1,0 +1,13 @@
+Monthly Usage Reset - {{ site_name }}
+
+Hello {{ user.first_name }},
+
+Your {{ site_name }} monthly content generation limit has been reset!
+
+You can now generate new content for your students. This month, you have:
+- {{ user.membership.tier.generation_limit|default:"Unlimited" }} content generations available
+
+We hope you continue to find value in {{ site_name }} and that it helps you create engaging educational experiences for your students.
+
+Happy teaching!
+The {{ site_name }} Team

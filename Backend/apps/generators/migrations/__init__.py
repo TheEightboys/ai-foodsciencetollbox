@@ -1,0 +1,2 @@
+# Generators app migrations
+
