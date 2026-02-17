@@ -263,7 +263,7 @@ class LessonStarterGenerateView(APIView):
                     )
                     
                     formatted_result = {
-                        'content': result.get('output', ''),
+                        'content': result.get('output', '') or '',
                         'tokens_used': 0,
                         'generation_time': 0,
                     }

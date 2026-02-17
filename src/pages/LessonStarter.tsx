@@ -51,8 +51,9 @@ const LessonStarter = () => {
         grade_level: gradeLevel,
       });
 
+      const rawContent = typeof response.content === 'string' ? response.content : (response.content ? String(response.content) : '');
       const formattedContent = formatContentWithMetadata(
-        response.content,
+        rawContent,
         gradeLevel,
         userIntent
       );

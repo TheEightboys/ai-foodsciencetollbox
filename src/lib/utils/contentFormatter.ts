@@ -28,6 +28,8 @@ export function capitalizeTopic(topic: string): string {
 }
 
 export function stripMetadataFromContent(content: string): string {
+  // Guard against null/undefined content
+  if (!content || typeof content !== 'string') return '';
   // Remove metadata lines that AI might have included (Grade Level, Time Needed, Topic)
   // Also remove generation type titles (Lesson Objectives, Lesson Starter, Bell Ringer)
   const lines = content.split('\n');
@@ -130,6 +132,8 @@ export function formatContentWithMetadata(
   topic: string,
   timeNeeded?: string
 ): string {
+  // Guard against null/undefined content
+  if (!content || typeof content !== 'string') content = '';
   // First, strip any metadata that AI might have included
   const cleanedContent = stripMetadataFromContent(content);
   

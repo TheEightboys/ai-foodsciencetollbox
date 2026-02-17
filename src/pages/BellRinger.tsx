@@ -45,7 +45,7 @@ const BellRinger = () => {
         subject: "Food Science",
       });
 
-      const content = response.content;
+      const content = typeof response.content === 'string' ? response.content : (response.content ? String(response.content) : '');
       
       const formattedOutput = [{
         title: "DISCUSSION QUESTIONS",

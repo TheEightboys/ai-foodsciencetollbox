@@ -58,8 +58,9 @@ const LearningObjectives = () => {
         num_objectives: numObjectives,
       });
 
+      const rawContent = typeof response.content === 'string' ? response.content : (response.content ? String(response.content) : '');
       const formattedContent = formatContentWithMetadata(
-        response.content,
+        rawContent,
         gradeLevel,
         userIntent
       );

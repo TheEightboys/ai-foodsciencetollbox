@@ -48,14 +48,14 @@ FREE_MODEL_CHAIN = [
 # Per-generator routing (max_tokens / temperature)
 # ---------------------------------------------------------------------------
 GENERATOR_PARAMS = {
-    "learning_objectives": {"max_tokens": 2000, "temperature": 0.7},
-    "key_terms":           {"max_tokens": 1200, "temperature": 0.5},
-    "discussion_questions": {"max_tokens": 2500, "temperature": 0.7},
-    "lesson_starter":      {"max_tokens": 2000, "temperature": 0.7},
-    "quiz":                {"max_tokens": 2000, "temperature": 0.7},
-    "lesson_plan":         {"max_tokens": 3000, "temperature": 0.7},
-    "bell_ringer":         {"max_tokens": 1500, "temperature": 0.7},
-    "_default":            {"max_tokens": 1500, "temperature": 0.7},
+    "learning_objectives": {"max_tokens": 1200, "temperature": 0.6},
+    "key_terms":           {"max_tokens": 800,  "temperature": 0.5},
+    "discussion_questions": {"max_tokens": 1500, "temperature": 0.6},
+    "lesson_starter":      {"max_tokens": 1500, "temperature": 0.6},
+    "quiz":                {"max_tokens": 1500, "temperature": 0.6},
+    "lesson_plan":         {"max_tokens": 2000, "temperature": 0.6},
+    "bell_ringer":         {"max_tokens": 1000, "temperature": 0.6},
+    "_default":            {"max_tokens": 1200, "temperature": 0.6},
 }
 
 # ---------------------------------------------------------------------------
@@ -113,8 +113,8 @@ class _Bulkhead:
         self._sem.release()
 
 
-_circuit = _CircuitBreaker(failure_threshold=5, recovery_timeout=60)
-_bulkhead = _Bulkhead(max_concurrent=10, acquire_timeout=5.0)
+_circuit = _CircuitBreaker(failure_threshold=3, recovery_timeout=30)
+_bulkhead = _Bulkhead(max_concurrent=5, acquire_timeout=10.0)
 
 # ---------------------------------------------------------------------------
 # Internal helpers
@@ -361,7 +361,7 @@ def generate_ai_content(
                     messages=messages,
                     max_tokens=max_tokens,
                     temperature=temperature,
-                    timeout=30.0,
+                    timeout=45.0,
                 )
                 text = _extract_text(data)
 

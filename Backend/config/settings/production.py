@@ -48,6 +48,8 @@ CORS_EXPOSE_HEADERS = [
     'content-type',
     'x-requested-with',
     'authorization',
+    'content-disposition',
+    'content-length',
 ]
 
 # Ensure CORS headers are always sent, even on error responses
@@ -136,6 +138,14 @@ if REDIS_URL:
             'OPTIONS': {
                 'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             }
+        },
+        'llm_cache': {
+            'BACKEND': 'django_redis.cache.RedisCache',
+            'LOCATION': REDIS_URL,
+            'TIMEOUT': 3600,
+            'OPTIONS': {
+                'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            }
         }
     }
 else:
@@ -144,5 +154,10 @@ else:
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
             'LOCATION': 'unique-snowflake',
+        },
+        'llm_cache': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+            'LOCATION': 'llm-cache',
+            'TIMEOUT': 3600,
         }
     }

@@ -347,7 +347,7 @@ export function OutputDisplay({
 
         {sections.map((section, index) => {
           // Process content to number Success Criteria items
-          const lines = section.content.split('\n');
+          const lines = (section.content || '').split('\n');
           const processedLines: React.ReactNode[] = [];
           let inSuccessCriteria = false;
           let successCriteriaCounter = 1;
