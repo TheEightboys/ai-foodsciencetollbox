@@ -132,9 +132,9 @@ const Home = () => {
               <div className="relative z-10">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-3xl blur-2xl opacity-20"></div>
                 <img 
-                  src="/hero-teacher.jpg" 
+                  src="/images.png" 
                   alt="Teacher helping students in a food science classroom" 
-                  className="relative rounded-3xl shadow-2xl object-cover w-full h-[480px] transform hover:scale-[1.02] transition-transform duration-500" 
+                  className="relative rounded-3xl shadow-2xl object-contain w-full max-h-[560px] transform hover:scale-[1.02] transition-transform duration-500" 
                 />
               </div>
             </div>
