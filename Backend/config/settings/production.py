@@ -75,16 +75,13 @@ if DATABASE_URL:
             conn_health_checks=True,
         )
     }
-    # SSL mode - allow non-SSL for local/internal connections
+    # SSL mode — Supabase and most cloud Postgres providers require SSL
     if 'OPTIONS' not in DATABASES['default']:
         DATABASES['default']['OPTIONS'] = {}
-    # Only require SSL if explicitly set
-    if config('DB_SSL_REQUIRE', default='false', cast=bool):
-        DATABASES['default']['OPTIONS']['sslmode'] = 'require'
-    else:
-        DATABASES['default']['OPTIONS']['sslmode'] = 'prefer'
+    DB_SSL = config('DB_SSL_REQUIRE', default='true', cast=bool)  # Default True for Supabase
+    DATABASES['default']['OPTIONS']['sslmode'] = 'require' if DB_SSL else 'prefer'
 else:
-    # No DATABASE_URL: use SQLite as lightweight fallback (Render free plan has no PostgreSQL)
+    # No DATABASE_URL: use SQLite as lightweight fallback
     import os as _os
     DATABASES = {
         'default': {

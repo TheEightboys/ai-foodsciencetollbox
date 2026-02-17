@@ -39,7 +39,7 @@ try:
     except Exception as mig_err:
         logger.warning(f"Auto-migration failed (non-fatal): {mig_err}")
 
-    # Keep-alive: start a background thread that pings this server every 10 minutes
+    # Keep-alive: start a background thread that pings this server every 5 minutes
     # Render free plan spins down after 15 min of inactivity; this prevents that.
     def _keep_alive():
         import time
@@ -49,11 +49,12 @@ try:
             logger.info("No RENDER_EXTERNAL_URL / API_BASE_URL set — keep-alive disabled")
             return
         health_url = f"{api_base.rstrip('/')}/api/health/"
-        logger.info(f"Keep-alive thread started — pinging {health_url} every 10 min")
+        logger.info(f"Keep-alive thread started — pinging {health_url} every 5 min")
         while True:
-            time.sleep(600)  # 10 minutes
+            time.sleep(300)  # 5 minutes
             try:
-                urllib.request.urlopen(health_url, timeout=10)
+                urllib.request.urlopen(health_url, timeout=15)
+                logger.debug("Keep-alive ping successful")
             except Exception:
                 pass  # Silently ignore; the ping itself triggers the wake
 

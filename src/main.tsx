@@ -14,10 +14,10 @@ import "./index.css";
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 if (API_BASE) {
   fetch(`${API_BASE.replace(/\/+$/, '')}/api/health/`, { method: 'HEAD', mode: 'cors' }).catch(() => {});
-  // Keep the backend alive by pinging every 10 minutes
+  // Keep the backend alive by pinging every 5 minutes
   setInterval(() => {
     fetch(`${API_BASE.replace(/\/+$/, '')}/api/health/`, { method: 'HEAD', mode: 'cors' }).catch(() => {});
-  }, 10 * 60 * 1000);
+  }, 5 * 60 * 1000);
 }
 
 const rootElement = document.getElementById("root");
