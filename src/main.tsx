@@ -13,10 +13,13 @@ import "./index.css";
 // This runs silently — if it fails, no user impact
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '';
 if (API_BASE) {
-  fetch(`${API_BASE.replace(/\/+$/, '')}/api/health/`, { method: 'HEAD', mode: 'cors' }).catch(() => {});
+  const healthUrl = `${API_BASE.replace(/\/+$/, '')}/api/health/`;
+  // Use no-cors mode for silent pings — we don't need to read the response,
+  // we just need to trigger the request so Render wakes up
+  fetch(healthUrl, { method: 'GET', mode: 'no-cors' }).catch(() => {});
   // Keep the backend alive by pinging every 5 minutes
   setInterval(() => {
-    fetch(`${API_BASE.replace(/\/+$/, '')}/api/health/`, { method: 'HEAD', mode: 'cors' }).catch(() => {});
+    fetch(healthUrl, { method: 'GET', mode: 'no-cors' }).catch(() => {});
   }, 5 * 60 * 1000);
 }
 

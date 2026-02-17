@@ -319,32 +319,21 @@ export function AuthModal({ onClose }: AuthModalProps) {
       const googleAuthUrl = `${cleanBaseUrl}/api/accounts/google/login/`.replace(/([^:]\/)\/+/g, '$1');
 
       // Ping the backend first to wake it up (Render free plan spins down)
-      // Retry up to 6 times (total ~90 seconds for cold start)
-      let backendReady = false;
-      for (let attempt = 0; attempt < 6; attempt++) {
+      // Use no-cors mode since we just need to trigger the wake-up, not read the response
+      // Retry up to 4 times (total ~40 seconds for cold start)
+      for (let attempt = 0; attempt < 4; attempt++) {
         try {
-          const res = await fetch(healthUrl, { method: 'GET', mode: 'cors', signal: AbortSignal.timeout(15000) });
-          if (res.ok) {
-            backendReady = true;
-            break;
-          }
+          await fetch(healthUrl, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(12000) });
+          // If we reach here, the server responded (even if opaque response)
+          break;
         } catch {
           // Backend still waking up, wait and retry
           await new Promise(r => setTimeout(r, 3000));
         }
       }
 
-      if (!backendReady) {
-        toast({
-          title: 'Server is starting up',
-          description: 'Please wait a moment and try again.',
-          variant: 'destructive',
-        });
-        setIsLoading(false);
-        setIsGoogleLoading(false);
-        return;
-      }
-
+      // Redirect to Google OAuth regardless — even if health check didn't succeed,
+      // the pings above have likely triggered Render to start waking up
       window.location.href = googleAuthUrl;
     } catch {
       toast({

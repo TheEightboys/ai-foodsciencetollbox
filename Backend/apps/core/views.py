@@ -7,7 +7,7 @@ from django.core.cache import cache
 from django.conf import settings
 
 
-@api_view(['GET', 'OPTIONS'])
+@api_view(['GET', 'HEAD', 'OPTIONS'])
 @permission_classes([AllowAny])
 def health_check(request):
     """
