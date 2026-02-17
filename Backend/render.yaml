@@ -4,9 +4,10 @@
 services:
   - name: food-science-backend
     type: web
-    env: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: ./
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn config.wsgi:application
     branch: main
     plan: starter
     autoDeploy: true
