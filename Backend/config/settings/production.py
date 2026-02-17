@@ -153,13 +153,6 @@ else:
 # Email backend for production
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
-# Celery: disable when no Redis available (Render free plan)
-if not REDIS_URL:
-    CELERY_TASK_ALWAYS_EAGER = True      # Execute tasks synchronously (no broker needed)
-    CELERY_TASK_EAGER_PROPAGATES = True   # Propagate exceptions in eager mode
-    CELERY_BROKER_URL = 'memory://'
-    CELERY_RESULT_BACKEND = 'cache+memory://'
-
 # Cache backend for production - fallback to local memory if Redis unavailable
 REDIS_URL = config('REDIS_URL', default=None)
 if REDIS_URL:
@@ -193,3 +186,10 @@ else:
             'TIMEOUT': 3600,
         }
     }
+
+# Celery: disable when no Redis available (Render free plan)
+if not REDIS_URL:
+    CELERY_TASK_ALWAYS_EAGER = True      # Execute tasks synchronously (no broker needed)
+    CELERY_TASK_EAGER_PROPAGATES = True   # Propagate exceptions in eager mode
+    CELERY_BROKER_URL = 'memory://'
+    CELERY_RESULT_BACKEND = 'cache+memory://'
