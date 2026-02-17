@@ -112,8 +112,19 @@ USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 
 # API_BASE_URL - used to build absolute download URLs in API responses
-# Set via env var on Render, e.g. https://ai-foodsciencetollbox.onrender.com
-API_BASE_URL = config('API_BASE_URL', default='')
+API_BASE_URL = config('API_BASE_URL', default='https://ai-foodsciencetollbox.onrender.com')
+
+# ── Production overrides for OAuth / frontend URLs ────────────────────────────
+# These override the localhost defaults from base.py
+FRONTEND_URL = config('FRONTEND_URL', default='https://ai.foodsciencetoolbox.com')
+GOOGLE_OAUTH_REDIRECT_URI = config(
+    'GOOGLE_OAUTH_REDIRECT_URI',
+    default='https://ai-foodsciencetollbox.onrender.com/api/accounts/google/callback/'
+)
+
+# Session cookie settings for cross-origin OAuth flow
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_HTTPONLY = True
 
 # CSRF Trusted Origins - allow API domain and frontend domain
 CSRF_TRUSTED_ORIGINS_STR = config('CSRF_TRUSTED_ORIGINS', default='')
