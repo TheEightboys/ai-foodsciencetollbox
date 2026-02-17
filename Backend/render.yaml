@@ -1,0 +1,18 @@
+# Render manifest for the Django backend service
+# - Place this file in Backend/ so Render auto-detects the service when you connect your GitHub repo.
+# - On Render: New -> Web Service -> select this repo -> Render will use this manifest.
+
+services:
+  - name: food-science-backend
+    type: web
+    env: docker
+    dockerfilePath: Dockerfile
+    branch: main
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      # Other env vars (SECRET_KEY, DATABASE_URL, CORS_ALLOWED_ORIGINS, etc.) should be set in Render dashboard.
+
+# Optional: add a managed Postgres instance using Render UI after connecting the repo.

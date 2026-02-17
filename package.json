@@ -11,9 +11,11 @@
     "dev": "vite",
     "build": "vite build",
     "build:dev": "vite build --mode development",
+    "postbuild": "cp public/.htaccess dist/.htaccess || true",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "npx serve -s dist -l 3000"
+    "start": "npx serve -s dist -l 3000",
+    "deploy:siteground": "bash ./scripts/deploy_siteground.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

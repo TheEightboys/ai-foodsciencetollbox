@@ -399,6 +399,64 @@ Located in `Backend/apps/generators/`:
 - **PDF**: Uses `FPDF2` with HTML templates for consistent styling
 - **Metadata Stripping**: Category field collected but excluded from output
 
+---
+
+# Deployment to SiteGround (frontend) & Render (backend)
+
+## Frontend — automatic deploy (SiteGround)
+
+- A GitHub Action is included: `.github/workflows/deploy-frontend-siteground.yml` — it builds the `dist/` production bundle and uploads via `rsync` over SSH to your SiteGround subdomain folder.
+
+- Required GitHub repository secrets (add in Settings → Secrets → Actions):
+  - `SITEGROUND_HOST` — SFTP/SSH host (example: `ssh.siteground.com` or your hosting host)
+  - `SITEGROUND_USER` — SFTP username
+  - `SITEGROUND_PATH` — remote path for `ai.foodsciencetoolbox.com` (example: `/home/<account>/public_html/ai/`)
+  - `SITEGROUND_SSH_PRIVATE_KEY` — private SSH key for the SFTP user (no passphrase recommended)
+
+- Manual alternative:
+  - Local build: `VITE_API_BASE_URL=https://api.foodsciencetoolbox.com npm ci && npm run build`
+  - Upload with rsync: `rsync -avz dist/ user@host:/home/<account>/public_html/ai/`
+  - Or run the helper script: `SITEGROUND_HOST=... SITEGROUND_USER=... SITEGROUND_PATH=... SITEGROUND_SSH_KEY=~/.ssh/id_rsa npm run deploy:siteground`
+
+---
+
+## Backend — recommended host: Render
+
+- A `Backend/render.yaml` manifest is included so Render can auto-detect and deploy the Django service when you connect this GitHub repository.
+- On Render, create a new Web Service and select this repo — Render will use `Backend/render.yaml` and the `Backend/Dockerfile`.
+- Required environment variables in Render:
+  - `SECRET_KEY`, `DATABASE_URL` (or attach a managed Postgres), `DJANGO_SETTINGS_MODULE=config.settings.production`, `ALLOWED_HOSTS=api.foodsciencetoolbox.com`, `CORS_ALLOWED_ORIGINS=https://ai.foodsciencetoolbox.com`, plus any Stripe/OpenAI keys.
+- Add the custom domain `api.foodsciencetoolbox.com` in Render; Render will provide a CNAME target. Add that CNAME to SiteGround DNS (Domain → DNS Zone Editor → add CNAME `api` → value from Render).
+
+---
+
+## DNS & SSL
+
+- Frontend subdomain `ai.foodsciencetoolbox.com` already exists on SiteGround. Ensure its document root contains the `dist/` contents.
+- For the backend, add a DNS CNAME record for `api` pointing to Render's CNAME target (or an A record if you host elsewhere).
+- After DNS is set, SiteGround (frontend) and Render (backend) will issue TLS automatically (Let's Encrypt).
+
+---
+
+## Quick verification commands
+
+- Check frontend is reachable: `curl -I https://ai.foodsciencetoolbox.com`
+- Check backend health: `curl -I https://api.foodsciencetoolbox.com/api/health/`
+- Check CORS header from backend (simulate frontend origin):
+  `curl -H "Origin: https://ai.foodsciencetoolbox.com" -I https://api.foodsciencetoolbox.com/`
+
+---
+
+### Next steps
+
+If you want, I can now:
+1) Run a local production build and produce `dist/` for you to upload, and/or
+2) Create a Pull Request with these changes so you can review, or
+3) Guide you through adding the GitHub secrets and connecting Render.
+
+Tell me which of the three to do next.
+
+
 ### Payment Integration
 - **Stripe Checkout**: Server-side session creation for PCI compliance
 - **Webhooks**: Handle subscription lifecycle events
