@@ -196,13 +196,10 @@ SIMPLE_JWT = {
 }
 
 # Celery Configuration - optional, won't break if Redis unavailable
-CELERY_BROKER_URL = config('CELERY_BROKER_URL', default=None)
-CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default=None)
-# Only configure Celery if broker URL is provided
-if not CELERY_BROKER_URL:
-    CELERY_BROKER_URL = 'redis://localhost:6379/0'
-if not CELERY_RESULT_BACKEND:
-    CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='memory://')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='cache+memory://')
+CELERY_TASK_ALWAYS_EAGER = config('CELERY_TASK_ALWAYS_EAGER', default=True, cast=bool)
+CELERY_TASK_EAGER_PROPAGATES = True
 
 # Email settings
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.smtp.EmailBackend')

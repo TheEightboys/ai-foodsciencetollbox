@@ -9,9 +9,9 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 # The reverse proxy (Coolify/Nginx) should handle host validation
 ALLOWED_HOSTS_STR = config('ALLOWED_HOSTS', default='*')
 if ALLOWED_HOSTS_STR == '*' or ALLOWED_HOSTS_STR == '':
-    # Empty list disables ALLOWED_HOSTS check (safe behind reverse proxy)
+    # ['*'] disables ALLOWED_HOSTS check (safe behind reverse proxy)
     # In production, the reverse proxy validates the Host header
-    ALLOWED_HOSTS = []
+    ALLOWED_HOSTS = ['*']
 else:
     ALLOWED_HOSTS = [s.strip() for s in ALLOWED_HOSTS_STR.split(',') if s.strip()]
 
@@ -152,6 +152,7 @@ else:
 
 # Email backend for production
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_TIMEOUT = 10  # Timeout in seconds to prevent hanging SMTP connections
 
 # Cache backend for production - fallback to local memory if Redis unavailable
 REDIS_URL = config('REDIS_URL', default=None)

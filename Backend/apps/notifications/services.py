@@ -143,7 +143,7 @@ The Food Science Toolbox Team"""
                 message,
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
-                fail_silently=False,
+                fail_silently=True,
             )
             logger.info(f"Welcome email sent successfully (fallback) to {user.email}")
             return True

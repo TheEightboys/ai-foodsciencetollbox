@@ -30,19 +30,19 @@ def create_user_profile_and_preferences(sender, instance, created, **kwargs):
             # If membership app is not available or tier doesn't exist, skip
             pass
         
-        # Send welcome email (async via Celery if available, otherwise sync)
+        # Send welcome email (async via Celery if available, otherwise skip)
+        # NOTE: On Render free plan, Celery runs in EAGER mode (synchronous).
+        # We wrap this in a broad try/except to avoid blocking user creation
+        # or the OAuth callback if email sending hangs or fails.
         try:
             from apps.notifications.tasks import send_welcome_email
-            # Try async first
             send_welcome_email.delay(instance.id)
-        except Exception:
-            # Fallback to sync if Celery not available
-            try:
-                from apps.notifications.services import EmailService
-                EmailService.send_welcome_email(instance)
-            except Exception:
-                # Email sending is optional, don't fail user creation
-                pass
+        except Exception as e:
+            # Email sending is optional, never fail user creation for it
+            import logging
+            logging.getLogger(__name__).warning(
+                f"Welcome email could not be sent for {instance.email}: {e}"
+            )
 
 
 @receiver(post_save, sender=User)
