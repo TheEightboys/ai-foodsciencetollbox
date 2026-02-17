@@ -25,6 +25,8 @@ CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=True, cast=bool)
 CORS_ALLOWED_ORIGINS = [
     'https://ai.foodsciencetoolbox.com',
     'https://www.foodsciencetoolbox.com',
+    'http://localhost:8080',
+    'http://localhost:8000',
 ]
 
 # Development origins (remove in production)
