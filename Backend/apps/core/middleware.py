@@ -15,25 +15,26 @@ class TimezoneMiddleware(MiddlewareMixin):
     """
     
     def process_request(self, request):
-        if request.user.is_authenticated:
-            try:
-                # Get user's timezone preference
-                # For now, we'll use a default timezone
-                # In a real implementation, you might store this in user preferences
-                tzname = getattr(request.user, 'timezone', 'UTC')
-                if tzname:
-                    try:
-                        import pytz
-                        timezone.activate(pytz.timezone(tzname))
-                    except ImportError:
-                        logger.warning("pytz not installed, using UTC")
-                        timezone.activate(timezone.utc)
-                else:
+        try:
+            if request.user.is_authenticated:
+                try:
+                    tzname = getattr(request.user, 'timezone', 'UTC')
+                    if tzname:
+                        try:
+                            import pytz
+                            timezone.activate(pytz.timezone(tzname))
+                        except ImportError:
+                            logger.warning("pytz not installed, using UTC")
+                            timezone.activate(timezone.utc)
+                    else:
+                        timezone.deactivate()
+                except Exception as e:
+                    logger.warning(f"Error activating timezone for user {request.user.email}: {e}")
                     timezone.deactivate()
-            except Exception as e:
-                logger.warning(f"Error activating timezone for user {request.user.email}: {e}")
-                timezone.deactivate()  # Deactivate to ensure no incorrect timezone is used
-        else:
+            else:
+                timezone.deactivate()
+        except Exception:
+            # Handle case where session table doesn't exist yet (pre-migration)
             timezone.deactivate()
 
 
