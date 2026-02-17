@@ -116,11 +116,21 @@ API_BASE_URL = config('API_BASE_URL', default='https://ai-foodsciencetollbox.onr
 
 # ── Production overrides for OAuth / frontend URLs ────────────────────────────
 # These override the localhost defaults from base.py
-FRONTEND_URL = config('FRONTEND_URL', default='https://ai.foodsciencetoolbox.com')
-GOOGLE_OAUTH_REDIRECT_URI = config(
+# Safety: if FRONTEND_URL contains localhost, force production URL
+_frontend = config('FRONTEND_URL', default='https://ai.foodsciencetoolbox.com')
+if 'localhost' in _frontend or '127.0.0.1' in _frontend:
+    FRONTEND_URL = 'https://ai.foodsciencetoolbox.com'
+else:
+    FRONTEND_URL = _frontend
+
+_redirect = config(
     'GOOGLE_OAUTH_REDIRECT_URI',
     default='https://ai-foodsciencetollbox.onrender.com/api/accounts/google/callback/'
 )
+if 'localhost' in _redirect or '127.0.0.1' in _redirect:
+    GOOGLE_OAUTH_REDIRECT_URI = 'https://ai-foodsciencetollbox.onrender.com/api/accounts/google/callback/'
+else:
+    GOOGLE_OAUTH_REDIRECT_URI = _redirect
 
 # Session cookie settings for cross-origin OAuth flow
 SESSION_COOKIE_SAMESITE = 'Lax'
