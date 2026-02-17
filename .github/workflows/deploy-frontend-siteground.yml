@@ -25,7 +25,8 @@ jobs:
         run: npm run build
 
       - name: Deploy to SiteGround (rsync)
-        uses: burnett01/rsync-deployments@v4
+        # use a released version that the runner can resolve
+        uses: burnett01/rsync-deployments@v3
         with:
           switches: -avzr --delete
           path: dist/
