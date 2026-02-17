@@ -55,8 +55,20 @@ const BellRinger = () => {
 
       setOutput(formattedOutput);
       setContentId(response.id);
-      setDocxUrl(response.formatted_docx_url);
-      setPdfUrl(response.formatted_pdf_url);
+
+      // Build download URLs - always prefer VITE_API_BASE_URL to avoid localhost leaking into production
+      let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 
+        (typeof window !== 'undefined' ? window.location.origin : '');
+      if (!apiBaseUrl.endsWith('/api')) {
+        apiBaseUrl = apiBaseUrl.replace(/\/api\/?$/, '') + '/api';
+      }
+      if (response.id) {
+        setDocxUrl(`${apiBaseUrl}/generators/${response.id}/export/docx/`);
+        setPdfUrl(`${apiBaseUrl}/generators/${response.id}/export/pdf/`);
+      } else {
+        setDocxUrl(response.formatted_docx_url);
+        setPdfUrl(response.formatted_pdf_url);
+      }
     } catch (error: any) {
       console.error('Generation error:', error);
       

@@ -103,13 +103,19 @@ export function OutputDisplay({
         downloadUrl = `${apiBaseUrl}${downloadUrl}`;
       }
       
+      // Rewrite localhost URLs in production — backend may return localhost if API_BASE_URL is not set
+      if (downloadUrl && (downloadUrl.includes('localhost') || downloadUrl.includes('127.0.0.1'))) {
+        const prodBase = import.meta.env.VITE_API_BASE_URL;
+        if (prodBase) {
+          const cleanBase = prodBase.replace(/\/+$/, '');
+          // Extract the path portion and rebuild
+          const urlPath = downloadUrl.replace(/^https?:\/\/[^/]+/, '');
+          downloadUrl = `${cleanBase}${urlPath}`;
+        }
+      }
+
       // Force HTTPS if current page is HTTPS (prevent mixed content)
       if (typeof window !== 'undefined' && window.location.protocol === 'https:' && downloadUrl.startsWith('http://')) {
-        downloadUrl = downloadUrl.replace('http://', 'https://');
-      }
-      
-      // If URL contains api.foodsciencetoolbox.com, ensure it's HTTPS
-      if (downloadUrl.includes('api.foodsciencetoolbox.com') && downloadUrl.startsWith('http://')) {
         downloadUrl = downloadUrl.replace('http://', 'https://');
       }
       
