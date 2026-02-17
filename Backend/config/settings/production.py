@@ -84,18 +84,12 @@ if DATABASE_URL:
     else:
         DATABASES['default']['OPTIONS']['sslmode'] = 'prefer'
 else:
-    # Fallback to individual settings with defaults
+    # No DATABASE_URL: use SQLite as lightweight fallback (Render free plan has no PostgreSQL)
+    import os as _os
     DATABASES = {
         'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME', default='teachai_db'),
-            'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default=''),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
-            'OPTIONS': {
-                'sslmode': config('DB_SSL_REQUIRE', default='prefer', cast=str),
-            },
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': _os.path.join(BASE_DIR, 'db.sqlite3'),
         }
     }
 
