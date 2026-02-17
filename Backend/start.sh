@@ -54,55 +54,37 @@ parse_db_url() {
     fi
 }
 
-# Wait for database to be ready
-echo "Waiting for database..."
-parse_db_url
-echo "Checking database at $DB_HOST:$DB_PORT..."
-
-# Wait for database with timeout
-timeout=30
-counter=0
-while ! nc -z "$DB_HOST" "$DB_PORT" 2>/dev/null; do
-    if [ $counter -ge $timeout ]; then
-        echo "WARNING: Database connection timeout after ${timeout}s, continuing anyway..."
-        break
-    fi
-    sleep 1
-    counter=$((counter + 1))
-done
-echo "Database check complete!"
-
-# Run migrations
-echo "Running migrations..."
-# Check if database is available before running migrations
-parse_db_url
-if nc -z "$DB_HOST" "$DB_PORT" 2>/dev/null; then
-    echo "Database is available, running migrations..."
-    
-    # First, create migrations for apps that don't have them
-    echo "Creating migrations for apps that need them..."
-    python manage.py makemigrations accounts memberships payments generators downloads notifications legal 2>&1 | grep -v "No changes detected" || true
-    
-    # Then run migrations
-    if python manage.py migrate --noinput 2>&1; then
-        echo "✓ Migrations completed successfully"
-    else
-        MIGRATION_EXIT_CODE=$?
-        echo "WARNING: Migrations encountered issues (exit code: $MIGRATION_EXIT_CODE)"
-        echo "Attempting to run migrations with --run-syncdb for initial setup..."
-        # Try with --run-syncdb for fresh databases
-        python manage.py migrate --run-syncdb --noinput 2>&1 || {
-            echo "Migration issues persist. The application will continue to start."
-            echo "You may need to run migrations manually:"
-            echo "  1. python manage.py makemigrations"
-            echo "  2. python manage.py migrate"
-        }
-    fi
-else
-    echo "WARNING: Database is not available at $DB_HOST:$DB_PORT"
-    echo "Skipping migrations for now. They will run when the database is available."
-    echo "You may need to run migrations manually once the database is connected."
+# Determine if we're using SQLite or PostgreSQL
+USING_SQLITE=false
+if [ -z "${DATABASE_URL:-}" ]; then
+    echo "No DATABASE_URL set — using SQLite."
+    USING_SQLITE=true
 fi
+
+# Wait for database to be ready (only for PostgreSQL)
+if [ "$USING_SQLITE" = false ]; then
+    echo "Waiting for database..."
+    parse_db_url
+    echo "Checking database at $DB_HOST:$DB_PORT..."
+    timeout=30
+    counter=0
+    while ! nc -z "$DB_HOST" "$DB_PORT" 2>/dev/null; do
+        if [ $counter -ge $timeout ]; then
+            echo "WARNING: Database connection timeout after ${timeout}s, continuing anyway..."
+            break
+        fi
+        sleep 1
+        counter=$((counter + 1))
+    done
+    echo "Database check complete!"
+fi
+
+# Run migrations — always run for SQLite (ephemeral filesystem)
+echo "Running migrations..."
+python manage.py migrate --noinput 2>&1 && echo "✓ Migrations completed successfully" || {
+    echo "WARNING: Migrations encountered issues, retrying with --run-syncdb..."
+    python manage.py migrate --run-syncdb --noinput 2>&1 || echo "Migration issues persist, continuing..."
+}
 
 # Collect static files
 echo "Collecting static files..."
