@@ -995,6 +995,73 @@ class DocumentFormatter:
         buffer.seek(0)
         return {'docx': buffer, 'format': 'docx'}
     
+    @staticmethod
+    def _sanitize_for_pdf(text: str) -> str:
+        """Sanitize text for FPDF2 Latin-1 built-in fonts.
+        
+        FPDF2 built-in fonts (Helvetica, Courier, Times) only support Latin-1.
+        This replaces common Unicode characters with their ASCII equivalents
+        so the PDF renders correctly without crashing.
+        """
+        if not text:
+            return text
+        replacements = {
+            # Bullets & dashes
+            '\u2022': '-',   # •
+            '\u2023': '>',   # ‣
+            '\u2043': '-',   # ⁃
+            '\u2013': '-',   # –
+            '\u2014': '-',   # —
+            '\u2015': '-',   # ―
+            # Smart quotes
+            '\u2018': "'",  # '
+            '\u2019': "'",  # '
+            '\u201A': "'",  # ‚
+            '\u201C': '"',  # "
+            '\u201D': '"',  # "
+            '\u201E': '"',  # „
+            '\u201F': '"',  # ‟
+            '\u2039': '<',   # ‹
+            '\u203A': '>',   # ›
+            '\u00AB': '"',  # «
+            '\u00BB': '"',  # »
+            # Spaces & special
+            '\u2026': '...',  # …
+            '\u00A0': ' ',   # non-breaking space
+            '\u200B': '',    # zero-width space
+            '\u200C': '',    # zero-width non-joiner
+            '\u200D': '',    # zero-width joiner
+            '\uFEFF': '',    # BOM
+            '\u2003': ' ',   # em space
+            '\u2002': ' ',   # en space
+            '\u2009': ' ',   # thin space
+            # Arrows & symbols
+            '\u2192': '->',  # →
+            '\u2190': '<-',  # ←
+            '\u2194': '<->', # ↔
+            '\u2713': 'v',   # ✓
+            '\u2714': 'v',   # ✔
+            '\u2715': 'x',   # ✕
+            '\u2716': 'x',   # ✖
+            '\u2717': 'x',   # ✗
+            '\u2718': 'x',   # ✘
+            '\u00B7': '-',   # ·
+            '\u25CF': '-',   # ●
+            '\u25CB': 'o',   # ○
+            '\u25AA': '-',   # ▪
+            '\u25AB': '-',   # ▫
+            '\u2605': '*',   # ★
+            '\u2606': '*',   # ☆
+        }
+        for old, new in replacements.items():
+            text = text.replace(old, new)
+        # Final fallback: encode to latin-1 and drop anything that still can't be encoded
+        try:
+            text.encode('latin-1')
+        except UnicodeEncodeError:
+            text = text.encode('latin-1', errors='replace').decode('latin-1')
+        return text
+
     def convert_docx_to_pdf(self, docx_buffer: io.BytesIO) -> io.BytesIO:
         """
         Convert DOCX buffer to PDF using FPDF2 (pure Python, no system dependencies).
@@ -1061,7 +1128,7 @@ class DocumentFormatter:
                         pdf.ln(pt_to_mm(6))  # Space before title (6pt)
                         pdf.set_font('Helvetica', 'B', actual_pt)
                         cell_height = pt_to_mm(actual_pt * 1.2)
-                        clean_text = text.replace('\u2022', '-').replace('\u2013', '-').replace('\u2014', '-')
+                        clean_text = self._sanitize_for_pdf(text)
                         pdf.cell(0, cell_height, clean_text, ln=1, align='C')
                         pdf.ln(pt_to_mm(4))  # Space after title
                         list_counter = 1
@@ -1076,8 +1143,7 @@ class DocumentFormatter:
                         pdf.ln(pt_to_mm(6))  # Space before section heading (6pt)
                         pdf.set_font('Helvetica', 'B', 14)
                         cell_height = pt_to_mm(17)  # ~6mm for 14pt font
-                        # Replace Unicode characters for compatibility
-                        clean_text = text.replace('•', '-').replace('–', '-').replace('—', '-')
+                        clean_text = self._sanitize_for_pdf(text)
                         pdf.cell(0, cell_height, clean_text, ln=1)
                         pdf.ln(pt_to_mm(4))  # Space after section heading (4pt)
                         # Reset counters based on section
@@ -1095,34 +1161,30 @@ class DocumentFormatter:
             style_name = getattr(para.style, 'name', '') if para.style else ''
             if style_name == 'List Bullet':
                 pdf.set_font('Helvetica', '', 12)
-                # Add bullet point with proper spacing (use ASCII '-' instead of Unicode '•')
-                cell_height = pt_to_mm(14)  # ~5mm for 12pt font
-                pdf.cell(5, cell_height, '-', ln=0)  # ASCII bullet with 5mm indent
-                # Remove any Unicode bullets from text and replace with ASCII
-                clean_text = text.replace('•', '-').replace('–', '-').replace('—', '-')
-                pdf.multi_cell(page_width_mm - 5, cell_height, clean_text, ln=1)  # Subtract indent width
-                pdf.ln(pt_to_mm(2))  # Small space between list items
-            # Check for manually numbered items FIRST (like "1. Text" for Success Criteria)
-            # This must come before List Number check to handle manually numbered Success Criteria
+                cell_height = pt_to_mm(14)
+                pdf.cell(5, cell_height, '-', ln=0)
+                clean_text = self._sanitize_for_pdf(text)
+                pdf.multi_cell(page_width_mm - 5, cell_height, clean_text, ln=1)
+                pdf.ln(pt_to_mm(2))
+                continue  # Prevent fallthrough to other handlers
+            
+            # Check for manually numbered items (like "1. Text" for Success Criteria)
             import re
             text_stripped = text.strip()
             if text_stripped and re.match(r'^\d+\.\s+', text_stripped):
-                # This is a manually numbered item (Success Criteria)
                 pdf.set_font('Helvetica', '', 12)
                 cell_height = pt_to_mm(14)
-                # Extract number and content
                 match = re.match(r'^(\d+)\.\s*(.+)$', text_stripped)
                 if match:
                     number = match.group(1)
                     content_text = match.group(2)
                     number_width = pdf.get_string_width(f'{number}.') + 2
                     pdf.cell(number_width, cell_height, f'{number}.', ln=0)
-                    clean_text = content_text.replace('•', '-').replace('–', '-').replace('—', '-')
+                    clean_text = self._sanitize_for_pdf(content_text)
                     pdf.multi_cell(page_width_mm - number_width, cell_height, clean_text, ln=1)
                     pdf.ln(pt_to_mm(2))
-                    continue
+                continue
             elif style_name == 'List Number':
-                # Numbered item (Learning Objectives) – plain text, no bold
                 cell_height = pt_to_mm(14)
                 number_text = f'{list_counter}.'
                 pdf.set_font('Helvetica', '', 12)
@@ -1130,7 +1192,7 @@ class DocumentFormatter:
                 indent_mm = 0.5 * 25.4  # 0.5 in → mm
                 pdf.cell(indent_mm - number_width, cell_height, '', ln=0)
                 pdf.cell(number_width, cell_height, number_text, ln=0)
-                clean_text = text.replace('\u2022', '-').replace('\u2013', '-').replace('\u2014', '-')
+                clean_text = self._sanitize_for_pdf(text)
                 pdf.multi_cell(page_width_mm - indent_mm, cell_height, clean_text, ln=1)
                 list_counter += 1
             else:
@@ -1142,7 +1204,7 @@ class DocumentFormatter:
                         run_bold = getattr(run, 'bold', False)
                         style_flag = 'B' if run_bold else ''
                         pdf.set_font('Helvetica', style_flag, 12)
-                        run_text = (run.text or '').replace('\u2022', '-').replace('\u2013', '-').replace('\u2014', '-')
+                        run_text = self._sanitize_for_pdf(run.text or '')
                         tw = pdf.get_string_width(run_text)
                         if tw <= remaining_width:
                             pdf.cell(tw, cell_height, run_text, ln=0)
@@ -1153,7 +1215,7 @@ class DocumentFormatter:
                     pdf.ln(cell_height)
                 else:
                     pdf.set_font('Helvetica', '', 12)
-                    clean_text = text.replace('\u2022', '-').replace('\u2013', '-').replace('\u2014', '-')
+                    clean_text = self._sanitize_for_pdf(text)
                     pdf.multi_cell(page_width_mm, cell_height, clean_text, ln=1)
                     pdf.ln(pt_to_mm(4))
         

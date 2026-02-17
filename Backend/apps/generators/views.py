@@ -20,8 +20,6 @@ from .document_formatter import DocumentFormatter
 from .validators import validate_generation_limit
 from apps.memberships.services import GenerationLimitService
 import logging
-import subprocess
-import sys
 
 try:
     from django_ratelimit.decorators import ratelimit
@@ -857,64 +855,6 @@ class DocumentExportView(APIView):
         elif format_type == 'pdf':
             # Generate actual PDF by converting DOCX to PDF
             try:
-                # Check if fpdf2 is available, try to install if missing
-                fpdf2_available = False
-                try:
-                    from fpdf import FPDF
-                    fpdf2_available = True
-                except (ImportError, AttributeError):
-                    fpdf2_available = False
-                
-                if not fpdf2_available:
-                    logger.warning("fpdf2 not found or not working, attempting to install...")
-                    try:
-                        # Use fpdf2 2.7.* - pure Python, no dependencies
-                        result = subprocess.run([
-                            sys.executable, '-m', 'pip', 'install', 
-                            '--upgrade', '--force-reinstall',
-                            '--quiet', '--disable-pip-version-check',
-                            'fpdf2==2.7.*'
-                        ], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
-                        
-                        if result.returncode != 0:
-                            error_msg = result.stderr.decode() if result.stderr else "Unknown error"
-                            logger.error(f"Failed to install fpdf2: {error_msg}")
-                            return Response(
-                                {'error': 'PDF generation is temporarily unavailable. Please try downloading as DOCX or contact support.'},
-                                status=status.HTTP_503_SERVICE_UNAVAILABLE
-                            )
-                        
-                        # Clear cached imports and re-import
-                        import importlib
-                        modules_to_clear = [k for k in sys.modules.keys() if k.startswith('fpdf')]
-                        for mod in modules_to_clear:
-                            del sys.modules[mod]
-                        
-                        # Clear document_formatter cache
-                        if 'apps.generators.document_formatter' in sys.modules:
-                            del sys.modules['apps.generators.document_formatter']
-                        
-                        # Re-import to verify
-                        from fpdf import FPDF
-                        
-                        # Reload document_formatter to update FPDF2_AVAILABLE flag
-                        importlib.reload(document_formatter)
-                        # Re-create formatter instance with updated module
-                        formatter = document_formatter.DocumentFormatter()
-                        logger.info("fpdf2 installed and reloaded successfully at runtime")
-                    except subprocess.TimeoutExpired:
-                        logger.error("fpdf2 installation timed out")
-                        return Response(
-                            {'error': 'PDF generation is temporarily unavailable. Installation timed out. Please try downloading as DOCX or contact support.'},
-                            status=status.HTTP_503_SERVICE_UNAVAILABLE
-                        )
-                    except Exception as install_error:
-                        logger.error(f"Failed to install fpdf2: {install_error}", exc_info=True)
-                        return Response(
-                            {'error': 'PDF generation is temporarily unavailable. Please try downloading as DOCX or contact support.'},
-                            status=status.HTTP_503_SERVICE_UNAVAILABLE
-                        )
-                
                 docx_buffer = formatted_doc['docx']
                 # Ensure DOCX buffer is at the beginning before conversion
                 docx_buffer.seek(0)
@@ -934,7 +874,6 @@ class DocumentExportView(APIView):
                 
                 # Generate filename with proper extension
                 filename = f"{generated_content.content_type}_{generated_content.id}.pdf"
-                # Use RFC 5987 encoding for filename to ensure proper handling
                 from urllib.parse import quote
                 encoded_filename = quote(filename)
                 
@@ -942,10 +881,15 @@ class DocumentExportView(APIView):
                     pdf_data,
                     content_type='application/pdf'
                 )
-                # Set Content-Disposition with both ASCII and UTF-8 encoded filename
                 response['Content-Disposition'] = f'attachment; filename="{filename}"; filename*=UTF-8\'\'{encoded_filename}'
                 response['Content-Length'] = str(len(pdf_data))
                 return response
+            except ImportError as e:
+                logger.error(f"PDF library not available: {e}")
+                return Response(
+                    {'error': 'PDF generation is not available. Please download as DOCX instead.'},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE
+                )
             except Exception as e:
                 logger.error(f"Error generating PDF: {e}", exc_info=True)
                 return Response(
