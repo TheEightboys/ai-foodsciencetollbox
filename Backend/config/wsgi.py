@@ -26,16 +26,13 @@ try:
     application = get_wsgi_application()
     logger.info("WSGI application loaded successfully")
 
-    # Auto-run migrations on startup (needed for SQLite on ephemeral filesystems like Render free plan)
-    # This ensures tables exist even when the Start Command doesn't include migrate
+    # Auto-run migrations on startup — ensures tables exist for any database
+    # Works for both SQLite (ephemeral) and PostgreSQL (Supabase)
     try:
         from django.core.management import call_command
-        from django.conf import settings as django_settings
-        db_engine = django_settings.DATABASES.get('default', {}).get('ENGINE', '')
-        if 'sqlite3' in db_engine:
-            logger.info("SQLite detected — running migrations on startup...")
-            call_command('migrate', '--noinput', verbosity=1)
-            logger.info("Migrations completed successfully")
+        logger.info("Running migrations on startup...")
+        call_command('migrate', '--noinput', verbosity=1)
+        logger.info("Migrations completed successfully")
     except Exception as mig_err:
         logger.warning(f"Auto-migration failed (non-fatal): {mig_err}")
 
