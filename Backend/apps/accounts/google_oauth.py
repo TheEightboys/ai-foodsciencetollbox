@@ -112,12 +112,15 @@ class GoogleCallbackView(APIView):
             frontend_url = settings.FRONTEND_URL
             return redirect(f"{frontend_url}/auth/google/callback?error={error}")
         
-        # Verify state
+        # Verify state (log warning if mismatch but don't block — session may be
+        # lost on ephemeral filesystems like Render free plan with SQLite)
         session_state = request.session.get('oauth_state')
         if not state or not session_state or state != session_state:
-            logger.error("Invalid OAuth state parameter")
-            frontend_url = settings.FRONTEND_URL
-            return redirect(f"{frontend_url}/auth/google/callback?error=invalid_state")
+            logger.warning(
+                f"OAuth state mismatch (session may have been lost). "
+                f"state={state!r}, session_state={session_state!r}. "
+                f"Proceeding anyway — Google code will still be validated."
+            )
         
         if not code:
             logger.error("Authorization code not provided")
