@@ -24,14 +24,15 @@ jobs:
           VITE_API_BASE_URL: https://api.foodsciencetoolbox.com
         run: npm run build
 
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SITEGROUND_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.SITEGROUND_HOST }} >> ~/.ssh/known_hosts
+
       - name: Deploy to SiteGround (rsync)
-        # use a released version that the runner can resolve
-        uses: burnett01/rsync-deployments@v3
-        with:
-          switches: -avzr --delete
-          path: dist/
-          remote_path: ${{ secrets.SITEGROUND_PATH }}
-          remote_host: ${{ secrets.SITEGROUND_HOST }}
-          remote_user: ${{ secrets.SITEGROUND_USER }}
-          # provide SITEGROUND_SSH_PRIVATE_KEY in repository secrets
-          private_key: ${{ secrets.SITEGROUND_SSH_PRIVATE_KEY }}
+        run: |
+          rsync -avzr --delete -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ \
+            ${{ secrets.SITEGROUND_USER }}@${{ secrets.SITEGROUND_HOST }}:${{ secrets.SITEGROUND_PATH }}
