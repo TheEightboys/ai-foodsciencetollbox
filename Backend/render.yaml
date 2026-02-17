@@ -2,33 +2,44 @@
 # Connect your GitHub repo to Render and this file will be auto-detected
 
 services:
-  - name: food-science-backend
+  - name: ai-foodsciencetollbox
     type: web
     env: python
     region: oregon
+    rootDir: Backend
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn config.wsgi:application
     branch: main
-    plan: starter
+    plan: free
     autoDeploy: true
     healthCheckPath: /api/health/
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: config.settings.production
       - key: SECRET_KEY
-        generateValue: true
+        sync: false
       - key: DEBUG
-        value: "False"
+        sync: false
       - key: ALLOWED_HOSTS
-        value: api.foodsciencetoolbox.com
+        sync: false
+      - key: EMAIL_BACKEND
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_MODEL
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_REDIRECT_URI
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
       - key: CORS_ALLOWED_ORIGINS
-        value: https://ai.foodsciencetoolbox.com
-      # Add these manually in Render dashboard:
-      # - OPENAI_API_KEY
-      # - STRIPE_SECRET_KEY
-      # - STRIPE_PUBLISHABLE_KEY
-      # - STRIPE_WEBHOOK_SECRET
-      # - DATABASE_URL (or attach managed Postgres)
+        sync: false
 
 # Add a managed Postgres database in Render dashboard after service creation
 
