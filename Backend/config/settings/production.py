@@ -112,6 +112,15 @@ SECURE_SSL_REDIRECT = config('SECURE_SSL_REDIRECT', default=False, cast=bool)
 SESSION_COOKIE_SECURE = config('SESSION_COOKIE_SECURE', default=False, cast=bool)
 CSRF_COOKIE_SECURE = config('CSRF_COOKIE_SECURE', default=False, cast=bool)
 
+# Trust proxy headers from Render / reverse proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
+# API_BASE_URL - used to build absolute download URLs in API responses
+# Set via env var on Render, e.g. https://ai-foodsciencetollbox.onrender.com
+API_BASE_URL = config('API_BASE_URL', default='')
+
 # CSRF Trusted Origins - allow API domain and frontend domain
 CSRF_TRUSTED_ORIGINS_STR = config('CSRF_TRUSTED_ORIGINS', default='')
 if CSRF_TRUSTED_ORIGINS_STR:
@@ -121,8 +130,9 @@ else:
     CSRF_TRUSTED_ORIGINS = [
         'https://api.foodsciencetoolbox.com',
         'https://ai.foodsciencetoolbox.com',
-        'http://api.foodsciencetoolbox.com',  # For development/testing
-        'http://ai.foodsciencetoolbox.com',  # For development/testing
+        'https://ai-foodsciencetollbox.onrender.com',
+        'http://api.foodsciencetoolbox.com',
+        'http://ai.foodsciencetoolbox.com',
     ]
 
 # Email backend for production
