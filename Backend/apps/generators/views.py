@@ -809,7 +809,7 @@ class DocumentExportView(APIView):
                 subject=subject
             )
         elif generated_content.content_type == 'learning_objectives':
-            topic = generated_content.input_parameters.get('topic', 'Topic')
+            topic = generated_content.input_parameters.get('user_intent', '') or generated_content.input_parameters.get('topic', 'Topic')
             grade_level = generated_content.input_parameters.get('grade_level', 'High School')
             subject = generated_content.input_parameters.get('subject', 'Food Science')
             formatted_doc = formatter.format_learning_objectives(

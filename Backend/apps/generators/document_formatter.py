@@ -319,8 +319,8 @@ class DocumentFormatter:
           0. Title: "Learning Objectives" – left-aligned, underlined, dark teal,
               Arial 14pt bold
           1. Blank line
-          2. TOPIC: {topic} – Arial 12pt, label ALL-CAPS bold
-          3. GRADE LEVEL: {grade_level} – Arial 12pt, label ALL-CAPS bold
+          2. Topic: {topic} – Arial 14pt, label bold
+          3. Grade: {grade_level} – Arial 14pt, label bold
           4. Blank line
           5. "By the end of this lesson, students will be able to:" – bold, Arial 12pt
           6+. Numbered objectives – decimal "1.", indented, Arial 12pt, no bold
@@ -363,31 +363,31 @@ class DocumentFormatter:
         # ── 1  Blank line ────────────────────────────────────────
         _blank()
 
-        # ── 2  TOPIC ─────────────────────────────────────────────
+        # ── 2  Topic ─────────────────────────────────────────────
         capitalized_topic = self._capitalize_topic(topic)
         topic_para = doc.add_paragraph()
         _set_spacing(topic_para)
-        t_label = topic_para.add_run('TOPIC: ')
+        t_label = topic_para.add_run('Topic: ')
         t_label.bold = True
         t_label.font.name = 'Arial'
-        t_label.font.size = Pt(12)
+        t_label.font.size = Pt(14)
         t_value = topic_para.add_run(capitalized_topic)
         t_value.bold = False
         t_value.font.name = 'Arial'
-        t_value.font.size = Pt(12)
+        t_value.font.size = Pt(14)
 
-        # ── 3  GRADE LEVEL ───────────────────────────────────────
+        # ── 3  Grade ───────────────────────────────────────
         capitalized_grade = self._capitalize_grade_level(grade_level)
         grade_para = doc.add_paragraph()
         _set_spacing(grade_para)
-        g_label = grade_para.add_run('GRADE LEVEL: ')
+        g_label = grade_para.add_run('Grade: ')
         g_label.bold = True
         g_label.font.name = 'Arial'
-        g_label.font.size = Pt(12)
+        g_label.font.size = Pt(14)
         g_value = grade_para.add_run(capitalized_grade)
         g_value.bold = False
         g_value.font.name = 'Arial'
-        g_value.font.size = Pt(12)
+        g_value.font.size = Pt(14)
 
         # ── 4  Blank line ────────────────────────────────────────
         _blank()
