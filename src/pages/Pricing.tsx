@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { MEMBERSHIP_TIERS } from '@/lib/constants';
-import { Check, Sparkles, Zap, Star, ArrowLeft, Loader2 } from 'lucide-react';
+import { Check, Sparkles, Star, ArrowLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { membershipService } from '@/lib/api/memberships';
@@ -24,13 +24,11 @@ export default function Pricing() {
 
   const tierIcons = {
     TRIAL: <Sparkles className="h-6 w-6" />,
-    STARTER: <Zap className="h-6 w-6" />,
     PRO: <Star className="h-6 w-6" />,
   };
 
   const tierColors = {
     TRIAL: 'border-muted',
-    STARTER: 'border-primary/30',
     PRO: 'border-accent/50',
   };
 
@@ -173,15 +171,6 @@ export default function Pricing() {
                         <span className="text-2xl font-bold text-foreground mt-1">$0</span>
                       </div>
                     </th>
-                    <th className="text-center p-4 font-semibold bg-accent/10">
-                      <div className="flex flex-col items-center">
-                        <span>Starter</span>
-                        <span className="text-2xl font-bold text-foreground mt-1">
-                          ${isYearly ? MEMBERSHIP_TIERS.STARTER.price.yearly : MEMBERSHIP_TIERS.STARTER.price.monthly}
-                        </span>
-                        <span className="text-xs text-muted-foreground">/{isYearly ? 'year' : 'mo'}</span>
-                      </div>
-                    </th>
                     <th className="text-center p-4 font-semibold bg-primary/10">
                       <div className="flex flex-col items-center">
                         <span>Pro</span>
@@ -197,37 +186,31 @@ export default function Pricing() {
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium">Generations</td>
                     <td className="p-4 text-center">{MEMBERSHIP_TIERS.TRIAL.generations}</td>
-                    <td className="p-4 text-center bg-accent/5">{MEMBERSHIP_TIERS.STARTER.generations}</td>
                     <td className="p-4 text-center bg-primary/5">Unlimited</td>
                   </tr>
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium">Word Downloads</td>
                     <td className="p-4 text-center"><Check className="h-5 w-5 mx-auto text-accent" /></td>
-                    <td className="p-4 text-center bg-accent/5"><Check className="h-5 w-5 mx-auto text-accent" /></td>
                     <td className="p-4 text-center bg-primary/5"><Check className="h-5 w-5 mx-auto text-accent" /></td>
                   </tr>
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium">Save & Manage Content in Dashboard</td>
                     <td className="p-4 text-center"><span className="text-muted-foreground">✘</span></td>
-                    <td className="p-4 text-center bg-accent/5"><Check className="h-5 w-5 mx-auto text-accent" /></td>
                     <td className="p-4 text-center bg-primary/5"><Check className="h-5 w-5 mx-auto text-accent" /></td>
                   </tr>
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium">Priority Support</td>
                     <td className="p-4 text-center"><span className="text-muted-foreground">✘</span></td>
-                    <td className="p-4 text-center bg-accent/5"><span className="text-muted-foreground">✘</span></td>
                     <td className="p-4 text-center bg-primary/5"><Check className="h-5 w-5 mx-auto text-accent" /></td>
                   </tr>
                   <tr className="border-b border-border">
                     <td className="p-4 font-medium">Early Access to New Tools</td>
                     <td className="p-4 text-center"><span className="text-muted-foreground">✘</span></td>
-                    <td className="p-4 text-center bg-accent/5"><span className="text-muted-foreground">✘</span></td>
                     <td className="p-4 text-center bg-primary/5"><Check className="h-5 w-5 mx-auto text-accent" /></td>
                   </tr>
                   <tr>
                     <td className="p-4 font-medium">Food Science Academy Membership</td>
                     <td className="p-4 text-center"><span className="text-muted-foreground">✘</span></td>
-                    <td className="p-4 text-center bg-accent/5"><span className="text-muted-foreground">✘</span></td>
                     <td className="p-4 text-center bg-primary/5"><Check className="h-5 w-5 mx-auto text-accent" /></td>
                   </tr>
                 </tbody>
@@ -248,22 +231,6 @@ export default function Pricing() {
                           </>
                         ) : (
                           'Start Free Trial'
-                        )}
-                      </Button>
-                    </td>
-                    <td className="p-4 bg-accent/5">
-                      <Button 
-                        className="w-full"
-                        onClick={() => handleSelectPlan('STARTER')}
-                        disabled={loadingPlan === 'STARTER'}
-                      >
-                        {loadingPlan === 'STARTER' ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Processing...
-                          </>
-                        ) : (
-                          'Get Started'
                         )}
                       </Button>
                     </td>

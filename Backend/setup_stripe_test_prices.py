@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 """
-Quick script to set test Stripe Price IDs for development/testing.
-This uses Stripe test mode Price IDs that you can create in your Stripe Dashboard.
+Quick script to set the Stripe Price ID for the Pro subscription tier.
+Starter tier has been removed; only Trial (free) and Pro ($25/mo) are active.
 
 Usage:
-    python setup_stripe_test_prices.py --starter price_test_xxx --pro price_test_yyy
+    python setup_stripe_test_prices.py --pro price_xxx
 
-Or set them via environment variables:
-    export STRIPE_STARTER_PRICE_ID=price_test_xxx
-    export STRIPE_PRO_PRICE_ID=price_test_yyy
+Or set via environment variable:
+    export STRIPE_PRO_PRICE_ID=price_xxx
     python setup_stripe_test_prices.py
 """
 import os
@@ -29,57 +28,39 @@ from apps.memberships.models import MembershipTier
 import argparse
 
 
-def setup_stripe_prices(starter_price_id=None, pro_price_id=None):
-    """Set Stripe Price IDs for membership tiers."""
+def setup_stripe_prices(pro_price_id=None):
+    """Set Stripe Price ID for the Pro membership tier."""
     
     # Get from environment if not provided
-    if not starter_price_id:
-        starter_price_id = os.environ.get('STRIPE_STARTER_PRICE_ID', '')
     if not pro_price_id:
         pro_price_id = os.environ.get('STRIPE_PRO_PRICE_ID', '')
     
-    if not starter_price_id and not pro_price_id:
+    if not pro_price_id:
         print("=" * 60)
-        print("Stripe Price ID Setup")
+        print("Stripe Price ID Setup (Pro Tier)")
         print("=" * 60)
         print("")
-        print("You need to provide Stripe Price IDs for Starter and Pro tiers.")
+        print("You need to provide the Stripe Price ID for the Pro tier.")
         print("")
-        print("Option 1: Via command line arguments")
-        print("  python setup_stripe_test_prices.py --starter price_test_xxx --pro price_test_yyy")
+        print("Option 1: Via command line argument")
+        print("  python setup_stripe_test_prices.py --pro price_xxx")
         print("")
-        print("Option 2: Via environment variables")
-        print("  export STRIPE_STARTER_PRICE_ID=price_test_xxx")
-        print("  export STRIPE_PRO_PRICE_ID=price_test_yyy")
+        print("Option 2: Via environment variable")
+        print("  export STRIPE_PRO_PRICE_ID=price_xxx")
         print("  python setup_stripe_test_prices.py")
         print("")
         print("Option 3: Via Django management command")
-        print("  python manage.py update_stripe_prices --starter price_test_xxx --pro price_test_yyy")
+        print("  python manage.py update_stripe_prices --pro price_xxx")
         print("")
-        print("To get your Stripe Price IDs:")
+        print("To get your Stripe Price ID:")
         print("  1. Go to https://dashboard.stripe.com/products")
-        print("  2. Create products for Starter ($12/month) and Pro ($25/month)")
-        print("  3. Copy the Price IDs (they start with 'price_')")
+        print("  2. Create a product for Pro ($25/month recurring)")
+        print("  3. Copy the Price ID (starts with 'price_')")
+        print("  4. Also add it as STRIPE_PRO_PRICE_ID env var on Render")
         print("")
         return False
     
     updated = []
-    
-    # Update Starter tier
-    if starter_price_id:
-        try:
-            tier = MembershipTier.objects.get(name='starter')
-            old_price_id = tier.stripe_price_id
-            tier.stripe_price_id = starter_price_id.strip()
-            tier.save()
-            print(f"✓ Updated Starter tier:")
-            print(f"  Old: {old_price_id or '(empty)'}")
-            print(f"  New: {tier.stripe_price_id}")
-            updated.append('Starter')
-        except MembershipTier.DoesNotExist:
-            print("✗ Error: Starter tier not found. Run 'python manage.py init_tiers' first.")
-        except Exception as e:
-            print(f"✗ Error updating Starter tier: {e}")
     
     # Update Pro tier
     if pro_price_id:
@@ -114,14 +95,12 @@ def setup_stripe_prices(starter_price_id=None, pro_price_id=None):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Set Stripe Price IDs for membership tiers')
-    parser.add_argument('--starter', type=str, help='Stripe Price ID for Starter tier')
-    parser.add_argument('--pro', type=str, help='Stripe Price ID for Pro tier')
+    parser = argparse.ArgumentParser(description='Set Stripe Price ID for Pro tier')
+    parser.add_argument('--pro', type=str, help='Stripe Price ID for Pro tier (starts with price_)')
     
     args = parser.parse_args()
     
     success = setup_stripe_prices(
-        starter_price_id=args.starter,
         pro_price_id=args.pro
     )
     

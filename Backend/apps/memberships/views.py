@@ -101,11 +101,21 @@ class MembershipUpgradeView(APIView):
                 tier = MembershipTier.objects.get(id=tier_id, is_active=True)
                 
                 # Check if tier has a Stripe price ID configured
-                if not tier.stripe_price_id:
+                # First check the DB value, then fall back to the env-var STRIPE_PRO_PRICE_ID
+                price_id = tier.stripe_price_id
+                if not price_id and tier.name == 'pro':
+                    from django.conf import settings as _settings
+                    price_id = getattr(_settings, 'STRIPE_PRO_PRICE_ID', '')
+                    if price_id and not tier.stripe_price_id:
+                        # Persist so future calls skip the env lookup
+                        tier.stripe_price_id = price_id
+                        tier.save(update_fields=['stripe_price_id'])
+
+                if not price_id:
                     logger.error(f"Stripe price ID not configured for tier: {tier.name} (ID: {tier.id})")
                     return Response({
                         'error': f'Stripe price ID not configured for {tier.display_name}.',
-                        'detail': 'Please contact support or configure Stripe Price IDs in Django admin.',
+                        'detail': 'Set the STRIPE_PRO_PRICE_ID environment variable on Render, then redeploy.',
                         'tier_name': tier.name,
                         'tier_id': tier.id
                     }, status=status.HTTP_400_BAD_REQUEST)
@@ -115,6 +125,13 @@ class MembershipUpgradeView(APIView):
                     from apps.payments.stripe_service import StripeService
                     from django.conf import settings
                     
+                    # Verify Stripe is configured before attempting checkout
+                    if not getattr(settings, 'STRIPE_SECRET_KEY', ''):
+                        return Response({
+                            'error': 'Stripe payments are not configured on this server.',
+                            'detail': 'Please set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, and STRIPE_WEBHOOK_SECRET as environment variables on Render, then redeploy.',
+                        }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                    
                     # Build success and cancel URLs
                     frontend_url = settings.FRONTEND_URL
                     success_url = f"{frontend_url}/account/billing?session_id={{CHECKOUT_SESSION_ID}}"
@@ -122,7 +139,7 @@ class MembershipUpgradeView(APIView):
                     
                     checkout_session = StripeService.create_checkout_session(
                         user=request.user,
-                        price_id=tier.stripe_price_id,
+                        price_id=price_id,
                         success_url=success_url,
                         cancel_url=cancel_url
                     )

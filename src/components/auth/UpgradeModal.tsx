@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MEMBERSHIP_TIERS } from '@/lib/constants';
-import { Check, Sparkles, Crown, Zap, Star, X, Rocket } from 'lucide-react';
+import { Check, Sparkles, Star, X, Rocket } from 'lucide-react';
 
 interface UpgradeModalProps {
   onClose: () => void;
@@ -13,7 +13,6 @@ export function UpgradeModal({ onClose }: UpgradeModalProps) {
 
   const tierIcons = {
     TRIAL: <Sparkles className="h-5 w-5" />,
-    STARTER: <Zap className="h-5 w-5" />,
     PRO: <Star className="h-5 w-5" />,
   };
 

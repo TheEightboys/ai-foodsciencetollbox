@@ -9,16 +9,6 @@ export const MEMBERSHIP_TIERS = {
       "Word Downloads",
     ],
   },
-  STARTER: {
-    name: "Starter",
-    generations: 40,
-    price: { monthly: 12, yearly: 120 },
-    features: [
-      "40 generations per month",
-      "Word Downloads",
-      "Save & Manage Content in Dashboard",
-    ],
-  },
   PRO: {
     name: "Pro",
     generations: -1, // -1 means unlimited

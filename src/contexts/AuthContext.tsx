@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { authService, User } from '@/lib/api/auth';
+import {
+  supabaseSignIn,
+  supabaseSignUp,
+  supabaseSignOut,
+  restoreSupabaseSession,
+} from '@/lib/api/supabaseAuth';
 
 interface AuthError {
   message?: string;
@@ -26,13 +32,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Try to restore a Supabase session first (covers page reload / returning users)
+      try {
+        const djangoAuth = await restoreSupabaseSession();
+        if (djangoAuth) {
+          setUser(djangoAuth.user as User);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // Supabase session not available, fall through to token check
+      }
+
+      // Fallback: check existing Django JWT stored in localStorage
       const token = authService.getAccessToken();
       if (token) {
         try {
           const currentUser = await authService.getCurrentUser();
           setUser(currentUser);
-        } catch (error) {
-          // Token invalid or expired - clear it
+        } catch {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           setUser(null);
@@ -48,88 +66,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
-      const response = await authService.register({
-        email,
-        password,
-        password_confirm: password,
-        first_name: firstName,
-        last_name: lastName,
-      });
-      return { error: null, message: response.message || 'Registration successful! Please check your email to verify your account.' };
-    } catch (error) {
-      const axiosError = error as { 
-        response?: { data?: AuthError }; 
-        message?: string;
-        code?: string;
-      };
-      
-      // Network error - backend not reachable
-      if (!axiosError.response) {
-        const isProduction = !import.meta.env.DEV;
-        
-        let errorMessage: string;
-        if (axiosError.code === 'ECONNABORTED') {
-          errorMessage = 'Request timed out. Please try again or contact support if the problem persists.';
-        } else if (axiosError.message?.includes('Network Error') || axiosError.code === 'ERR_NETWORK') {
-          errorMessage = isProduction
-            ? 'Cannot connect to backend API. Please check your network connection or contact support.'
-            : 'Cannot connect to server. Please ensure the backend is running.';
-        } else {
-          errorMessage = isProduction
-            ? 'Unable to connect to server. Please check your network connection or contact support.'
-            : 'Unable to connect to server. Please check your connection and ensure the backend is running.';
-        }
-        
-        return { 
-          error: { 
-            message: errorMessage 
-          } 
-        };
+      const result = await supabaseSignUp(email, password, firstName, lastName);
+      if (result.user) {
+        setUser(result.user as User);
       }
-      
-      return { 
-        error: axiosError.response?.data || { message: 'Registration failed. Please try again.' } 
-      };
+      return { error: null, message: result.message };
+    } catch (error) {
+      const err = error as Error;
+      return { error: { message: err.message || 'Registration failed. Please try again.' } };
     }
   };
 
   const signIn = async (email: string, password: string) => {
     try {
-      const response = await authService.login({ email, password });
-      setUser(response.user);
+      const response = await supabaseSignIn(email, password);
+      setUser(response.user as User);
       return { error: null };
     } catch (error) {
-      const axiosError = error as { response?: { data?: AuthError & { error?: string; detail?: string } } };
-      const errorData = axiosError.response?.data;
-      
-      // Extract error message from backend response
-      // Backend returns { error: "...", detail: "..." } format
-      if (errorData) {
-        if (errorData.error) {
-          // Backend error format: { error: "message", detail: "..." }
-          return { error: { message: errorData.error } };
-        } else if (errorData.message) {
-          // Standard format: { message: "..." }
-          return { error: { message: errorData.message } };
-        } else if (errorData.non_field_errors) {
-          // DRF format: { non_field_errors: [...] }
-          return { error: { message: errorData.non_field_errors[0] } };
-        }
-      }
-      
-      return { error: { message: 'Login failed. Please check your credentials and try again.' } };
+      const err = error as Error;
+      return { error: { message: err.message || 'Login failed. Please check your credentials and try again.' } };
     }
   };
 
   const signOut = async () => {
-    // Clear user state immediately for better UX
     setUser(null);
-    
-    // Logout from backend (non-blocking)
     try {
-      await authService.logout();
-    } catch (error) {
-      // Ignore errors - user is already signed out locally
+      await supabaseSignOut();
+    } catch {
+      // Ignore errors — tokens cleared locally
     }
   };
 

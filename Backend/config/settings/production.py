@@ -109,6 +109,7 @@ USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
 
 # API_BASE_URL - used to build absolute download URLs in API responses
+# Set this env var in Render/Coolify to match the backend's public URL
 API_BASE_URL = config('API_BASE_URL', default='https://ai-foodsciencetollbox.onrender.com')
 
 # ── Production overrides for OAuth / frontend URLs ────────────────────────────
@@ -122,10 +123,10 @@ else:
 
 _redirect = config(
     'GOOGLE_OAUTH_REDIRECT_URI',
-    default='https://ai-foodsciencetollbox.onrender.com/api/accounts/google/callback/'
+    default=f'{API_BASE_URL}/api/accounts/google/callback/'
 )
 if 'localhost' in _redirect or '127.0.0.1' in _redirect:
-    GOOGLE_OAUTH_REDIRECT_URI = 'https://ai-foodsciencetollbox.onrender.com/api/accounts/google/callback/'
+    GOOGLE_OAUTH_REDIRECT_URI = f'{API_BASE_URL}/api/accounts/google/callback/'
 else:
     GOOGLE_OAUTH_REDIRECT_URI = _redirect
 

@@ -227,6 +227,14 @@ RATE_LIMIT_PER_IP = config('RATE_LIMIT_PER_IP', default=100, cast=int)
 STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY', default='')
 STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY', default='')
 STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET', default='')
+# Per-plan price IDs (set these env vars on Render)
+STRIPE_PRO_PRICE_ID = config('STRIPE_PRO_PRICE_ID', default='')
+
+# Supabase settings (used for auth token exchange)
+# The anon key is public — safe to have a default here.
+# ⚠️  Update these to match the project where Google OAuth is configured (yovsoogkphjmtuaoztzc)
+SUPABASE_URL = config('SUPABASE_URL', default='https://yovsoogkphjmtuaoztzc.supabase.co')
+SUPABASE_ANON_KEY = config('SUPABASE_ANON_KEY', default='')
 
 # Download settings
 TEMP_DOWNLOAD_DIR = 'temp_downloads'

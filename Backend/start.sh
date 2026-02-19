@@ -115,6 +115,14 @@ python manage.py init_tiers 2>&1 || {
     echo "You can run 'python manage.py init_tiers' manually later."
 }
 
+# Auto-configure Stripe price IDs from environment variables (if set)
+if [ -n "$STRIPE_PRO_PRICE_ID" ]; then
+    echo "Configuring Stripe Pro price ID from environment..."
+    python manage.py update_stripe_prices --pro "$STRIPE_PRO_PRICE_ID" 2>&1 || {
+        echo "WARNING: Failed to configure Stripe Pro price ID, continuing..."
+    }
+fi
+
 # Create superuser if it doesn't exist (non-interactive)
 # Run in background to not block startup if it fails
 echo "Creating superuser (if not exists)..."

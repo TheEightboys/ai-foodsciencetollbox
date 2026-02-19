@@ -31,35 +31,21 @@ class Command(BaseCommand):
                 ]
             },
             {
-                'name': 'starter',
-                'display_name': 'Starter',
-                'description': 'Perfect for teachers getting started with AI-generated content',
-                'monthly_price': 12.00,
-                'generation_limit': 40,
-                'stripe_price_id': '',  # Will need to be set after creating Stripe price
-                'is_active': True,
-                'display_order': 1,
-                'features': [
-                    '40 generations per month',
-                    'Word Downloads',
-                    'Save & Manage Content in Dashboard',
-                ]
-            },
-            {
                 'name': 'pro',
                 'display_name': 'Pro',
                 'description': 'For professional educators who need unlimited content generation',
                 'monthly_price': 25.00,
                 'generation_limit': None,  # Unlimited
-                'stripe_price_id': '',  # Will need to be set after creating Stripe price
+                'stripe_price_id': '',  # Set via update_stripe_prices management command
                 'is_active': True,
-                'display_order': 2,
+                'display_order': 1,
                 'features': [
                     'Unlimited generations',
                     'Word Downloads',
                     'Save & Manage Content in Dashboard',
                     'Priority Support',
                     'Early Access to New Tools',
+                    'Food Science Academy Membership',
                 ]
             }
         ]
@@ -111,9 +97,16 @@ class Command(BaseCommand):
                 f'Successfully initialized tiers: {created_count} created, {updated_count} updated'
             )
         )
+        # Deactivate the Starter tier if it exists (no longer offered)
+        deactivated = MembershipTier.objects.filter(name='starter', is_active=True).update(is_active=False)
+        if deactivated:
+            self.stdout.write(self.style.WARNING('↻ Starter tier deactivated (no longer offered)'))
+
         self.stdout.write('')
         self.stdout.write('Next steps:')
-        self.stdout.write('  1. Create Stripe products and prices for Starter and Pro tiers')
-        self.stdout.write('  2. Update stripe_price_id for each tier in Django admin')
-        self.stdout.write('  3. Test subscription checkout flow')
+        self.stdout.write('  1. Create a Stripe product for Pro ($25/month recurring)')
+        self.stdout.write('  2. Copy the Price ID (starts with price_) from Stripe Dashboard')
+        self.stdout.write('  3. Run: python manage.py update_stripe_prices --pro <price_id>')
+        self.stdout.write('  4. Set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET on Render')
+        self.stdout.write('  5. Test Pro subscription checkout flow')
 

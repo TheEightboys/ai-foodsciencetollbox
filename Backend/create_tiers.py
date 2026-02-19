@@ -43,21 +43,6 @@ def create_tiers():
             ]
         },
         {
-            'name': 'starter',
-            'display_name': 'Starter',
-            'description': 'Perfect for teachers getting started with AI-generated content',
-            'monthly_price': 12.00,
-            'generation_limit': 40,
-            'stripe_price_id': '',
-            'is_active': True,
-            'display_order': 1,
-            'features': [
-                '40 generations per month',
-                'Word Downloads',
-                'Save & Manage Content in Dashboard',
-            ]
-        },
-        {
             'name': 'pro',
             'display_name': 'Pro',
             'description': 'For professional educators who need unlimited content generation',
@@ -65,13 +50,14 @@ def create_tiers():
             'generation_limit': None,
             'stripe_price_id': '',
             'is_active': True,
-            'display_order': 2,
+            'display_order': 1,
             'features': [
                 'Unlimited generations',
                 'Word Downloads',
                 'Save & Manage Content in Dashboard',
                 'Priority Support',
                 'Early Access to New Tools',
+                'Food Science Academy Membership',
             ]
         }
     ]
@@ -106,11 +92,19 @@ def create_tiers():
     
     print("")
     print(f"Successfully initialized tiers: {created_count} created, {updated_count} updated")
+    
+    # Deactivate starter tier if it exists (no longer offered)
+    deactivated = MembershipTier.objects.filter(name='starter', is_active=True).update(is_active=False)
+    if deactivated:
+        print(f"↻ Deactivated Starter tier (no longer offered — hidden from users)")
+    
     print("")
     print("Next steps:")
-    print("  1. Create Stripe products and prices for Starter and Pro tiers")
-    print("  2. Update stripe_price_id for each tier in Django admin")
-    print("  3. Test subscription checkout flow")
+    print("  1. Create a Stripe product and price for the Pro tier ($25/mo)")
+    print("  2. Set STRIPE_PRO_PRICE_ID env var on Render (starts with 'price_')")
+    print("  3. Run: python manage.py update_stripe_prices --pro <price_id>")
+    print("  4. Set STRIPE_SECRET_KEY, STRIPE_PUBLISHABLE_KEY, STRIPE_WEBHOOK_SECRET on Render")
+    print("  5. Test subscription checkout flow")
 
 if __name__ == '__main__':
     try:

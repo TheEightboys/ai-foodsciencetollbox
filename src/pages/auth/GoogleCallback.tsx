@@ -1,74 +1,42 @@
-import { useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { authService } from '@/lib/api/auth';
+import { handleSupabaseGoogleCallback } from '@/lib/api/supabaseAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export default function GoogleCallback() {
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { refreshUser } = useAuth();
   const { toast } = useToast();
+  const hasRun = useRef(false);
 
   useEffect(() => {
-    const access = searchParams.get('access');
-    const refresh = searchParams.get('refresh');
-    const error = searchParams.get('error');
+    // Prevent double-execution in React Strict Mode
+    if (hasRun.current) return;
+    hasRun.current = true;
 
-    if (error) {
-      // Handle error
-      let errorMessage = 'Google sign-in failed. Please try again.';
-      
-      if (error === 'invalid_state') {
-        errorMessage = 'Security validation failed. Please try signing in again.';
-      } else if (error === 'no_code') {
-        errorMessage = 'Authorization failed. Please try signing in again.';
-      } else if (error === 'oauth_failed') {
-        errorMessage = 'Google authentication failed. Please try again.';
-      }
-      
-      toast({
-        title: 'Sign-in failed',
-        description: errorMessage,
-        variant: 'destructive',
-      });
-      
-      navigate('/');
-      return;
-    }
-
-    if (access && refresh) {
-      // Store tokens
-      localStorage.setItem('access_token', access);
-      localStorage.setItem('refresh_token', refresh);
-
-      // Fetch user data and update auth context
-      authService.getCurrentUser()
-        .then((user) => {
-          refreshUser();
-          toast({
-            title: 'Welcome!',
-            description: `Successfully signed in as ${user.email}`,
-          });
-          navigate('/');
-        })
-        .catch((err) => {
-          toast({
-            title: 'Sign-in incomplete',
-            description: 'Signed in with Google, but failed to load your profile. Please refresh the page.',
-            variant: 'destructive',
-          });
-          navigate('/');
+    const finishSignIn = async () => {
+      try {
+        const djangoAuth = await handleSupabaseGoogleCallback();
+        await refreshUser();
+        toast({
+          title: 'Welcome!',
+          description: `Signed in as ${djangoAuth.user.email}`,
         });
-    } else {
-      toast({
-        title: 'Sign-in failed',
-        description: 'No authentication tokens received. Please try again.',
-        variant: 'destructive',
-      });
-      navigate('/');
-    }
-  }, [searchParams, navigate, refreshUser, toast]);
+        navigate('/');
+      } catch (err) {
+        const e = err as Error;
+        toast({
+          title: 'Google sign-in failed',
+          description: e.message || 'Please try again.',
+          variant: 'destructive',
+        });
+        navigate('/');
+      }
+    };
+
+    finishSignIn();
+  }, [navigate, refreshUser, toast]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -80,4 +48,3 @@ export default function GoogleCallback() {
     </div>
   );
 }
-

@@ -65,10 +65,12 @@ class GoogleLoginView(APIView):
             flow.redirect_uri = settings.GOOGLE_OAUTH_REDIRECT_URI
             
             # Generate authorization URL
+            # Use 'select_account' instead of 'consent' so returning users are not
+            # forced to re-grant permissions every single login (only new grants trigger consent)
             authorization_url, state = flow.authorization_url(
                 access_type='offline',
                 include_granted_scopes='true',
-                prompt='consent'
+                prompt='select_account'
             )
             
             # Store state in session for security

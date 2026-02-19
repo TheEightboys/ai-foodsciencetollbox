@@ -1,6 +1,8 @@
 """
-Management command to update Stripe Price IDs for membership tiers.
-Usage: python manage.py update_stripe_prices --starter price_xxx --pro price_yyy
+Management command to update the Stripe Price ID for the Pro membership tier.
+Usage: python manage.py update_stripe_prices --pro price_xxx
+
+Note: Starter tier was removed. Only Trial (free) and Pro ($25/mo) are active.
 """
 from django.core.management.base import BaseCommand
 from apps.memberships.models import MembershipTier
@@ -11,40 +13,32 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--starter',
-            type=str,
-            help='Stripe Price ID for Starter tier (e.g., price_1234567890)'
-        )
-        parser.add_argument(
             '--pro',
             type=str,
             help='Stripe Price ID for Pro tier (e.g., price_0987654321)'
         )
 
     def handle(self, *args, **options):
-        starter_price_id = options.get('starter')
         pro_price_id = options.get('pro')
         
-        if not starter_price_id and not pro_price_id:
+        if not pro_price_id:
             self.stdout.write(self.style.ERROR(
-                'Please provide at least one Stripe Price ID using --starter or --pro'
+                'Please provide the Stripe Price ID using --pro'
             ))
             self.stdout.write('')
             self.stdout.write('Example:')
-            self.stdout.write('  python manage.py update_stripe_prices --starter price_1234567890 --pro price_0987654321')
+            self.stdout.write('  python manage.py update_stripe_prices --pro price_0987654321')
             self.stdout.write('')
             self.stdout.write(self.style.WARNING(
-                'IMPORTANT: Price IDs must start with "price_" and come from Stripe Dashboard!'
+                'IMPORTANT: Price ID must start with "price_" and come from Stripe Dashboard!'
             ))
-            self.stdout.write('  - Go to https://dashboard.stripe.com/test/products')
-            self.stdout.write('  - Create products and copy the actual Price IDs')
-            self.stdout.write('  - Do NOT use placeholder text like "starter_id"')
+            self.stdout.write('  - Go to https://dashboard.stripe.com/products')
+            self.stdout.write('  - Create a Pro product ($25/month recurring) and copy the Price ID')
+            self.stdout.write('  - Also set STRIPE_PRO_PRICE_ID env var on Render for future deployments')
             return
         
         # Validate Price ID format
         invalid_ids = []
-        if starter_price_id and not starter_price_id.startswith('price_'):
-            invalid_ids.append(f'Starter: {starter_price_id}')
         if pro_price_id and not pro_price_id.startswith('price_'):
             invalid_ids.append(f'Pro: {pro_price_id}')
         
@@ -60,21 +54,6 @@ class Command(BaseCommand):
             return
         
         updated_count = 0
-        
-        # Update Starter tier
-        if starter_price_id:
-            try:
-                tier = MembershipTier.objects.get(name='starter')
-                tier.stripe_price_id = starter_price_id
-                tier.save()
-                self.stdout.write(
-                    self.style.SUCCESS(f'✓ Updated Starter tier with Price ID: {starter_price_id}')
-                )
-                updated_count += 1
-            except MembershipTier.DoesNotExist:
-                self.stdout.write(self.style.ERROR('Starter tier not found. Run "python manage.py init_tiers" first.'))
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f'Error updating Starter tier: {e}'))
         
         # Update Pro tier
         if pro_price_id:

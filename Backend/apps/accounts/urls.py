@@ -16,6 +16,7 @@ from .views import (
     TestEmailView
 )
 from .google_oauth import GoogleLoginView, GoogleCallbackView
+from .supabase_views import SupabaseTokenExchangeView
 
 app_name = 'accounts'
 
@@ -34,7 +35,9 @@ urlpatterns = [
     path('resend-verification-email/', ResendVerificationEmailView.as_view(), name='resend-verification-email'),
     path('contact-support/', ContactSupportView.as_view(), name='contact-support'),
     path('test-email/', TestEmailView.as_view(), name='test-email'),
-    # Google OAuth
+    # Supabase token exchange (primary auth method)
+    path('supabase-token/', SupabaseTokenExchangeView.as_view(), name='supabase-token'),
+    # Google OAuth (legacy — kept for backwards compat)
     path('google/login/', GoogleLoginView.as_view(), name='google-login'),
     path('google/callback/', GoogleCallbackView.as_view(), name='google-callback'),
 ]
