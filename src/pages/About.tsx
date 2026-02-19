@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CheckCircle2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { AuthModal } from "@/components/auth/AuthModal";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import logo from "@/assets/logo.png";
 export default function About() {
   const { user } = useAuth();
@@ -237,6 +237,7 @@ export default function About() {
       {/* Auth Modal */}
       <Dialog open={showAuthModal} onOpenChange={setShowAuthModal}>
         <DialogContent className="max-w-md p-0 border-0">
+          <DialogTitle className="sr-only">Sign in to Food Science Toolbox</DialogTitle>
           <AuthModal onClose={() => setShowAuthModal(false)} />
         </DialogContent>
       </Dialog>

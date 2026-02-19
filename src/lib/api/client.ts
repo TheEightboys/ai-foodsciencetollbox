@@ -76,11 +76,38 @@ const apiClient: AxiosInstance = axios.create({
 });
 
 /**
- * Request interceptor: Automatically adds JWT access token to all requests.
+ * Request interceptor: Injects Django JWT. If the backend was sleeping during
+ * sign-in, a Supabase token may be pending exchange — try that now (lazy exchange).
  */
 apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  async (config: InternalAxiosRequestConfig) => {
+    let token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+
+    // Lazy Django token exchange: attempt once when no Django token is stored
+    // but a Supabase token was saved as a fallback during sign-in.
+    if (!token) {
+      const pendingSupabaseToken = localStorage.getItem('supabase_pending_token');
+      if (pendingSupabaseToken) {
+        try {
+          const baseUrl = (config.baseURL || API_BASE_URL).replace(/\/+$/, '');
+          const resp = await fetch(`${baseUrl}/accounts/supabase-token/`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ supabase_token: pendingSupabaseToken }),
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.access);
+            localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refresh);
+            localStorage.removeItem('supabase_pending_token');
+            token = data.access;
+          }
+        } catch {
+          // Backend still unavailable — proceed without token (will get 401/403)
+        }
+      }
+    }
+
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }

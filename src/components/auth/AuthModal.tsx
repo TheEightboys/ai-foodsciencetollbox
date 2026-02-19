@@ -310,38 +310,18 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true);
     setIsGoogleLoading(true);
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-      const cleanBaseUrl = apiBaseUrl.replace(/\/+$/, '');
-      const healthUrl = `${cleanBaseUrl}/api/health/`;
-      const googleAuthUrl = `${cleanBaseUrl}/api/accounts/google/login/`.replace(/([^:]\/)\/+/g, '$1');
-
-      // Ping the backend first to wake it up (Render free plan spins down)
-      // Use no-cors mode since we just need to trigger the wake-up, not read the response
-      // Retry up to 4 times (total ~40 seconds for cold start)
-      for (let attempt = 0; attempt < 4; attempt++) {
-        try {
-          await fetch(healthUrl, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(12000) });
-          // If we reach here, the server responded (even if opaque response)
-          break;
-        } catch {
-          // Backend still waking up, wait and retry
-          await new Promise(r => setTimeout(r, 3000));
-        }
-      }
-
-      // Redirect to Google OAuth regardless — even if health check didn't succeed,
-      // the pings above have likely triggered Render to start waking up
-      window.location.href = googleAuthUrl;
-    } catch {
+      const { supabaseSignInWithGoogle } = await import('@/lib/api/supabaseAuth');
+      await supabaseSignInWithGoogle();
+      // Browser will be redirected to Google; no further action needed here
+    } catch (err) {
+      const e = err as Error;
       toast({
-        title: 'Sign in failed',
-        description: 'Google sign in is not available yet. Please use email and password.',
+        title: 'Google sign-in failed',
+        description: e.message || 'Unable to start Google sign-in. Please try email and password instead.',
         variant: 'destructive',
       });
-      setIsLoading(false);
       setIsGoogleLoading(false);
     }
   };
@@ -357,18 +337,19 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
     setIsLoading(true);
     try {
-      // Import authService for password reset
-      const { authService } = await import('@/lib/api');
-      await authService.requestPasswordReset(email);
+      // Use Supabase for password reset — no backend cold-start dependency
+      const { supabase } = await import('@/lib/supabase');
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+      if (error) throw error;
       toast({
         title: 'Reset email sent',
         description: 'Please check your email for password reset instructions.',
       });
       setResetEmailSent(true);
     } catch (error) {
-      const message = error instanceof Error && 'response' in error
-        ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-        : undefined;
+      const message = error instanceof Error ? error.message : undefined;
       toast({
         title: 'Reset failed',
         description: message || 'Failed to send reset email. Please try again.',
@@ -862,12 +843,12 @@ export function AuthModal({ onClose }: AuthModalProps) {
             variant="outline"
             className="w-full h-11 bg-muted/30 border-muted-foreground/20 hover:bg-muted hover:border-muted-foreground/40 transition-all"
             onClick={handleGoogleSignIn}
-            disabled={isLoading}
+            disabled={isLoading || isGoogleLoading}
           >
             {isGoogleLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Connecting to server...
+                Redirecting to Google...
               </>
             ) : (
               <>
