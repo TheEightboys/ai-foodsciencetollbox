@@ -13,6 +13,7 @@ from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from google_auth_oauthlib.flow import Flow
 import os
+import requests as _requests
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, TeacherProfile, UserPreferences
@@ -158,8 +159,9 @@ class GoogleCallbackView(APIView):
             credentials = flow.credentials
             idinfo = id_token.verify_oauth2_token(
                 credentials.id_token,
-                google_requests.Request(),
-                client_id
+                google_requests.Request(session=_requests.Session()),
+                client_id,
+                clock_skew_in_seconds=10,
             )
             
             # Verify the token is from Google
@@ -299,8 +301,9 @@ class GoogleCodeExchangeView(APIView):
             credentials = flow.credentials
             idinfo = id_token.verify_oauth2_token(
                 credentials.id_token,
-                google_requests.Request(),
+                google_requests.Request(session=_requests.Session()),
                 client_id,
+                clock_skew_in_seconds=10,
             )
 
             if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:

@@ -200,15 +200,16 @@ echo "DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-not set}"
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.production}
 
 # Start Gunicorn - use exec to replace shell process
-# NOTE: 1 worker on Render free tier (512 MB RAM) - avoids OOM kills.
-# --preload is intentionally omitted: it loads the full Django app in the
-# master process before forking, which doubles memory usage on free tier.
-# AI API calls (OpenAI/OpenRouter) can take 30-90 s, so timeout=120 is safe
-# while still allowing the health-check watchdog to recycle truly stuck workers.
+# NOTE: gevent worker on Render free tier (512 MB RAM).
+# gevent uses async I/O so external HTTP calls (Google OAuth, OpenAI) do NOT
+# block the worker — no more WORKER TIMEOUT during Google token exchange.
+# 1 worker with gevent handles many concurrent connections via green threads.
+# --worker-connections 20 limits simultaneous coroutines to keep memory low.
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
+    --worker-class gevent \
     --workers 1 \
-    --threads 2 \
+    --worker-connections 20 \
     --timeout 120 \
     --graceful-timeout 30 \
     --keep-alive 5 \
