@@ -260,9 +260,6 @@ class GoogleCodeExchangeView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        if settings.DEBUG:
-            os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-
         code = request.data.get('code')
         redirect_uri = request.data.get('redirect_uri')
 
@@ -276,37 +273,69 @@ class GoogleCodeExchangeView(APIView):
         client_secret = settings.GOOGLE_OAUTH_CLIENT_SECRET
 
         if not client_id or not client_secret:
-            logger.error('Google OAuth credentials not configured')
+            logger.error('Google OAuth credentials not configured on the server.')
             return Response(
-                {'error': 'Google OAuth is not configured. Please contact support.'},
+                {'error': 'Google OAuth is not configured on the server. Please contact support.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
         try:
-            flow = Flow.from_client_config(
-                {
-                    "web": {
-                        "client_id": client_id,
-                        "client_secret": client_secret,
-                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                        "token_uri": "https://oauth2.googleapis.com/token",
-                        "redirect_uris": [redirect_uri],
-                    }
+            # Exchange the authorization code for tokens by calling Google's
+            # token endpoint directly — avoids google_auth_oauthlib Flow quirks.
+            token_response = _requests.post(
+                'https://oauth2.googleapis.com/token',
+                data={
+                    'code': code,
+                    'client_id': client_id,
+                    'client_secret': client_secret,
+                    'redirect_uri': redirect_uri,
+                    'grant_type': 'authorization_code',
                 },
-                scopes=SCOPES,
+                timeout=10,
             )
-            flow.redirect_uri = redirect_uri
-            flow.fetch_token(code=code)
 
-            credentials = flow.credentials
+            token_data = token_response.json()
+
+            if token_response.status_code != 200 or 'error' in token_data:
+                google_error = token_data.get('error', 'unknown_error')
+                google_desc = token_data.get('error_description', '')
+                logger.error(
+                    f'Google token exchange failed: {google_error} — {google_desc} '
+                    f'(redirect_uri={redirect_uri!r})'
+                )
+                # Map redirect_uri_mismatch to a clear user-facing message.
+                if google_error == 'redirect_uri_mismatch':
+                    return Response(
+                        {
+                            'error': (
+                                'Google sign-in configuration error: redirect URI mismatch. '
+                                'Please contact support.'
+                            )
+                        },
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+                return Response(
+                    {'error': f'Google sign-in failed: {google_error}. Please try again.'},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            raw_id_token = token_data.get('id_token')
+            if not raw_id_token:
+                logger.error('Google token response missing id_token field.')
+                return Response(
+                    {'error': 'Google sign-in failed: no identity token returned.'},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            # Verify the ID token with Google's public keys.
             idinfo = id_token.verify_oauth2_token(
-                credentials.id_token,
+                raw_id_token,
                 google_requests.Request(session=_requests.Session()),
                 client_id,
                 clock_skew_in_seconds=10,
             )
 
-            if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+            if idinfo.get('iss') not in ['accounts.google.com', 'https://accounts.google.com']:
                 raise ValueError('Wrong token issuer.')
 
             email = idinfo.get('email')
@@ -317,7 +346,7 @@ class GoogleCodeExchangeView(APIView):
             if not email:
                 raise ValueError('Email not provided by Google.')
 
-            # Get or create the Django user
+            # Get or create the Django user.
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
@@ -351,6 +380,7 @@ class GoogleCodeExchangeView(APIView):
                 UserPreferences.objects.create(user=user)
 
             refresh = RefreshToken.for_user(user)
+            logger.info(f'Google sign-in successful for {email} (new={created})')
             return Response({
                 'access': str(refresh.access_token),
                 'refresh': str(refresh),
@@ -366,8 +396,8 @@ class GoogleCodeExchangeView(APIView):
             logger.error(f'Google code exchange validation error: {e}', exc_info=True)
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            logger.error(f'Google code exchange error: {e}', exc_info=True)
+            logger.error(f'Google code exchange unexpected error: {e}', exc_info=True)
             return Response(
-                {'error': 'OAuth code exchange failed. Please try again.'},
+                {'error': f'OAuth code exchange failed: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
