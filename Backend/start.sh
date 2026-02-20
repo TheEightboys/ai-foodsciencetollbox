@@ -149,25 +149,33 @@ export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.producti
 
 # Start Gunicorn - use exec to replace shell process
 # NOTE: Render free tier has only 512 MB RAM.
-# Using gthread worker (built into gunicorn, no extra deps) so that long-running
-# OpenAI/AI generation calls do NOT block health checks or other requests.
-# With a single sync worker, the process was busy during AI API calls; Render's
-# 30s health-check timeout killed the worker in an infinite restart loop.
-# gthread threads share the same process heap (unlike multiple workers) so
-# memory stays well under 512 MB. 4 threads comfortably handles concurrent
-# AI generation + health-check + other small requests.
-# Timeout set to 300s to cover slow OpenAI generation calls.
+#
+# MEMORY BUDGET (512 MB limit):
+#   --preload was REMOVED because it loads the full Django app (~250 MB) into
+#   the master process. When the gthread worker forked, master (~250 MB) +
+#   worker copy-on-write growth (~280 MB) = ~530 MB → OS OOM killer sent
+#   SIGKILL → Gunicorn reported "WORKER TIMEOUT / Perhaps out of memory?".
+#
+#   Without --preload:
+#     master  : ~50 MB  (bare gunicorn, no app loaded)
+#     worker  : ~280 MB (loads Django app once, shared across 2 threads)
+#     total   : ~330 MB  ← comfortably under 512 MB
+#
+# CONCURRENCY:
+#   gthread with 2 threads lets the worker serve health checks and small
+#   requests while one thread is blocked waiting on OpenAI I/O, preventing
+#   the 30-second Render health-check kill loop.
+#   Timeout 300s covers slow AI generation calls.
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
     --worker-class gthread \
     --workers 1 \
-    --threads 4 \
+    --threads 2 \
     --timeout 300 \
     --graceful-timeout 30 \
     --keep-alive 5 \
     --max-requests 500 \
     --max-requests-jitter 50 \
-    --preload \
     --access-logfile - \
     --error-logfile - \
     --log-level info \
