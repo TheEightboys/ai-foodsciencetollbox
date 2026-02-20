@@ -186,14 +186,11 @@ apiClient.interceptors.response.use(
 
         return apiClient(originalRequest);
       } catch (refreshError) {
-        // Refresh failed: clear tokens and redirect to login
+        // Refresh failed: clear tokens.
+        // Do NOT hard-redirect — the React auth context will detect the
+        // missing user and show the login UI without a full page reload.
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
         localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-        
-        // Only redirect if we're in the browser
-        if (typeof window !== 'undefined') {
-          window.location.href = '/';
-        }
         
         return Promise.reject(refreshError);
       }

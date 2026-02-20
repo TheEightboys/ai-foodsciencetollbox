@@ -1,24 +1,43 @@
-import { useState, useMemo } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Progress } from '@/components/ui/progress';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2, X, Mail, Lock, User, ArrowRight, ArrowLeft, Eye, EyeOff, CheckCircle2, AlertCircle } from 'lucide-react';
-import { z } from 'zod';
-import logo from '@/assets/logo.png';
+import { useState, useMemo } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Loader2,
+  X,
+  Mail,
+  Lock,
+  User,
+  ArrowRight,
+  ArrowLeft,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  AlertCircle,
+} from "lucide-react";
+import { z } from "zod";
+import logo from "@/assets/logo.png";
 
-const emailSchema = z.string().email('Please enter a valid email address');
-const passwordSchema = z.string()
-  .min(8, 'Password must be at least 8 characters')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/[0-9]/, 'Password must contain at least one number');
+const emailSchema = z.string().email("Please enter a valid email address");
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number");
 
 /**
  * Calculates password strength based on various criteria.
@@ -45,11 +64,13 @@ const calculatePasswordStrength = (password: string): number => {
 /**
  * Gets password strength label and color.
  */
-const getPasswordStrengthInfo = (strength: number): { label: string; color: string } => {
-  if (strength < 30) return { label: 'Weak', color: 'bg-destructive' };
-  if (strength < 60) return { label: 'Fair', color: 'bg-orange-500' };
-  if (strength < 80) return { label: 'Good', color: 'bg-yellow-500' };
-  return { label: 'Strong', color: 'bg-green-500' };
+const getPasswordStrengthInfo = (
+  strength: number,
+): { label: string; color: string } => {
+  if (strength < 30) return { label: "Weak", color: "bg-destructive" };
+  if (strength < 60) return { label: "Fair", color: "bg-orange-500" };
+  if (strength < 80) return { label: "Good", color: "bg-yellow-500" };
+  return { label: "Strong", color: "bg-green-500" };
 };
 
 interface AuthModalProps {
@@ -58,29 +79,41 @@ interface AuthModalProps {
 
 export function AuthModal({ onClose }: AuthModalProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; firstName?: string; lastName?: string; terms?: string }>({});
+  const [errors, setErrors] = useState<{
+    email?: string;
+    password?: string;
+    firstName?: string;
+    lastName?: string;
+    terms?: string;
+  }>({});
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const { signIn, signUp } = useAuth();
   const { toast } = useToast();
 
   // Calculate password strength in real-time
-  const passwordStrength = useMemo(() => calculatePasswordStrength(password), [password]);
-  const passwordStrengthInfo = useMemo(() => getPasswordStrengthInfo(passwordStrength), [passwordStrength]);
+  const passwordStrength = useMemo(
+    () => calculatePasswordStrength(password),
+    [password],
+  );
+  const passwordStrengthInfo = useMemo(
+    () => getPasswordStrengthInfo(passwordStrength),
+    [passwordStrength],
+  );
 
   // Password requirements checklist
   const passwordRequirements = useMemo(() => {
     return [
-      { label: 'At least 8 characters', met: password.length >= 8 },
-      { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
-      { label: 'One lowercase letter', met: /[a-z]/.test(password) },
-      { label: 'One number', met: /[0-9]/.test(password) },
+      { label: "At least 8 characters", met: password.length >= 8 },
+      { label: "One uppercase letter", met: /[A-Z]/.test(password) },
+      { label: "One lowercase letter", met: /[a-z]/.test(password) },
+      { label: "One number", met: /[0-9]/.test(password) },
     ];
   }, [password]);
 
@@ -89,20 +122,26 @@ export function AuthModal({ onClose }: AuthModalProps) {
    * Returns true if all validations pass.
    */
   const validateSignupForm = () => {
-    const newErrors: { email?: string; password?: string; firstName?: string; lastName?: string; terms?: string } = {};
+    const newErrors: {
+      email?: string;
+      password?: string;
+      firstName?: string;
+      lastName?: string;
+      terms?: string;
+    } = {};
 
     // Validate first name
     if (!firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+      newErrors.firstName = "First name is required";
     } else if (firstName.trim().length < 2) {
-      newErrors.firstName = 'First name must be at least 2 characters';
+      newErrors.firstName = "First name must be at least 2 characters";
     }
 
     // Validate last name
     if (!lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
+      newErrors.lastName = "Last name is required";
     } else if (lastName.trim().length < 2) {
-      newErrors.lastName = 'Last name must be at least 2 characters';
+      newErrors.lastName = "Last name must be at least 2 characters";
     }
 
     // Validate email
@@ -119,7 +158,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
     // Validate terms acceptance
     if (!acceptedTerms) {
-      newErrors.terms = 'You must accept the terms and conditions';
+      newErrors.terms = "You must accept the terms and conditions";
     }
 
     setErrors(newErrors);
@@ -138,7 +177,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
     }
 
     if (!password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
 
     setErrors(newErrors);
@@ -154,28 +193,46 @@ export function AuthModal({ onClose }: AuthModalProps) {
     setIsLoading(false);
 
     if (error) {
-      let message = 'Invalid email or password';
+      let message = "Invalid email or password";
 
-      if (typeof error === 'string') {
+      if (typeof error === "string") {
         message = error;
-      } else if (error && typeof error === 'object') {
+      } else if (error && typeof error === "object") {
         // Check for backend error format: { error: "message", detail: "..." }
         if (error.error) {
           message = error.error;
         } else if (error.message) {
           message = error.message;
-        } else if (error.non_field_errors && Array.isArray(error.non_field_errors)) {
+        } else if (
+          error.non_field_errors &&
+          Array.isArray(error.non_field_errors)
+        ) {
           message = error.non_field_errors[0] || message;
         }
       }
 
       toast({
-        title: 'Sign in failed',
+        title: "Sign in failed",
         description: message,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } else {
-      if (onClose) onClose();
+      if (onClose) {
+        onClose();
+      } else {
+        // When rendered inside ProtectedRoute (no onClose), the auth context
+        // update should automatically hide this modal. As a safety net, if the
+        // modal is somehow still visible after a short delay, force a reload so
+        // the page picks up the new Supabase session.
+        setTimeout(() => {
+          // If document still contains this modal, something went wrong with the
+          // context re-render — reload the page.
+          const stillVisible = document.querySelector("[data-auth-modal]");
+          if (stillVisible) {
+            window.location.reload();
+          }
+        }, 500);
+      }
     }
   };
 
@@ -186,68 +243,88 @@ export function AuthModal({ onClose }: AuthModalProps) {
     setIsLoading(true);
     setErrors({}); // Clear previous errors
 
-    const { error, message: successMessage } = await signUp(email, password, firstName, lastName);
+    const { error, message: successMessage } = await signUp(
+      email,
+      password,
+      firstName,
+      lastName,
+    );
     setIsLoading(false);
 
     if (!error) {
       // Registration successful - show success message
       toast({
-        title: 'Account created successfully!',
-        description: successMessage || 'Please check your email to verify your account before signing in.',
-        variant: 'default',
+        title: "Account created successfully!",
+        description:
+          successMessage ||
+          "Please check your email to verify your account before signing in.",
+        variant: "default",
       });
 
       // Clear form and switch to sign in tab
-      setEmail('');
-      setPassword('');
-      setFirstName('');
-      setLastName('');
-      setActiveTab('signin');
+      setEmail("");
+      setPassword("");
+      setFirstName("");
+      setLastName("");
+      setActiveTab("signin");
       return;
     }
 
     if (error) {
       // Extract field-specific errors
-      const fieldErrors: { email?: string; password?: string; first_name?: string; last_name?: string; firstName?: string; lastName?: string } = {};
+      const fieldErrors: {
+        email?: string;
+        password?: string;
+        first_name?: string;
+        last_name?: string;
+        firstName?: string;
+        lastName?: string;
+      } = {};
 
       // Handle different error response formats
-      if (typeof error === 'object' && error !== null) {
+      if (typeof error === "object" && error !== null) {
         // Check for errors object (from backend validation) - this is the primary format
-        if (error.errors && typeof error.errors === 'object') {
+        if (error.errors && typeof error.errors === "object") {
           // Map backend field names to frontend field names
           if (error.errors.email) {
-            fieldErrors.email = typeof error.errors.email === 'string'
-              ? error.errors.email
-              : Array.isArray(error.errors.email)
-                ? error.errors.email[0]
-                : 'Invalid email';
+            fieldErrors.email =
+              typeof error.errors.email === "string"
+                ? error.errors.email
+                : Array.isArray(error.errors.email)
+                  ? error.errors.email[0]
+                  : "Invalid email";
           }
           if (error.errors.first_name) {
-            fieldErrors.firstName = typeof error.errors.first_name === 'string'
-              ? error.errors.first_name
-              : Array.isArray(error.errors.first_name)
-                ? error.errors.first_name[0]
-                : 'Invalid first name';
+            fieldErrors.firstName =
+              typeof error.errors.first_name === "string"
+                ? error.errors.first_name
+                : Array.isArray(error.errors.first_name)
+                  ? error.errors.first_name[0]
+                  : "Invalid first name";
           }
           if (error.errors.last_name) {
-            fieldErrors.lastName = typeof error.errors.last_name === 'string'
-              ? error.errors.last_name
-              : Array.isArray(error.errors.last_name)
-                ? error.errors.last_name[0]
-                : 'Invalid last name';
+            fieldErrors.lastName =
+              typeof error.errors.last_name === "string"
+                ? error.errors.last_name
+                : Array.isArray(error.errors.last_name)
+                  ? error.errors.last_name[0]
+                  : "Invalid last name";
           }
           if (error.errors.password) {
-            fieldErrors.password = typeof error.errors.password === 'string'
-              ? error.errors.password
-              : Array.isArray(error.errors.password)
-                ? error.errors.password[0]
-                : 'Invalid password';
+            fieldErrors.password =
+              typeof error.errors.password === "string"
+                ? error.errors.password
+                : Array.isArray(error.errors.password)
+                  ? error.errors.password[0]
+                  : "Invalid password";
           }
         }
 
         // Also check for direct field errors (legacy format or alternative structure)
         if (error.email && !fieldErrors.email) {
-          fieldErrors.email = Array.isArray(error.email) ? error.email[0] : String(error.email);
+          fieldErrors.email = Array.isArray(error.email)
+            ? error.email[0]
+            : String(error.email);
         }
         if ((error.first_name || error.firstName) && !fieldErrors.firstName) {
           const firstNameError = error.first_name || error.firstName;
@@ -262,7 +339,9 @@ export function AuthModal({ onClose }: AuthModalProps) {
             : String(lastNameError);
         }
         if (error.password && !fieldErrors.password) {
-          fieldErrors.password = Array.isArray(error.password) ? error.password[0] : String(error.password);
+          fieldErrors.password = Array.isArray(error.password)
+            ? error.password[0]
+            : String(error.password);
         }
       }
 
@@ -270,18 +349,23 @@ export function AuthModal({ onClose }: AuthModalProps) {
       setErrors(fieldErrors);
 
       // Get primary error message for toast
-      let errorMessage = typeof error === 'string'
-        ? error
-        : error.error || error.message || 'Registration failed';
+      let errorMessage =
+        typeof error === "string"
+          ? error
+          : error.error || error.message || "Registration failed";
 
       // Improve user-friendly messages
       if (fieldErrors.email) {
         errorMessage = fieldErrors.email;
-        if (errorMessage.toLowerCase().includes('already exists') ||
-          errorMessage.toLowerCase().includes('already registered') ||
-          errorMessage.toLowerCase().includes('user with this email')) {
-          errorMessage = 'This email is already registered. Please sign in instead.';
-          fieldErrors.email = 'This email is already registered. Please sign in instead.';
+        if (
+          errorMessage.toLowerCase().includes("already exists") ||
+          errorMessage.toLowerCase().includes("already registered") ||
+          errorMessage.toLowerCase().includes("user with this email")
+        ) {
+          errorMessage =
+            "This email is already registered. Please sign in instead.";
+          fieldErrors.email =
+            "This email is already registered. Please sign in instead.";
           // Update errors state with improved message
           setErrors(fieldErrors);
         }
@@ -294,14 +378,14 @@ export function AuthModal({ onClose }: AuthModalProps) {
       }
 
       toast({
-        title: 'Sign up failed',
+        title: "Sign up failed",
         description: errorMessage,
-        variant: 'destructive',
+        variant: "destructive",
       });
     } else {
       toast({
-        title: 'Account created!',
-        description: 'Please check your email to verify your account.',
+        title: "Account created!",
+        description: "Please check your email to verify your account.",
       });
       if (onClose) onClose();
     }
@@ -312,15 +396,18 @@ export function AuthModal({ onClose }: AuthModalProps) {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      const { supabaseSignInWithGoogle } = await import('@/lib/api/supabaseAuth');
+      const { supabaseSignInWithGoogle } =
+        await import("@/lib/api/supabaseAuth");
       await supabaseSignInWithGoogle();
       // Browser will be redirected to Google; no further action needed here
     } catch (err) {
       const e = err as Error;
       toast({
-        title: 'Google sign-in failed',
-        description: e.message || 'Unable to start Google sign-in. Please try email and password instead.',
-        variant: 'destructive',
+        title: "Google sign-in failed",
+        description:
+          e.message ||
+          "Unable to start Google sign-in. Please try email and password instead.",
+        variant: "destructive",
       });
       setIsGoogleLoading(false);
     }
@@ -338,22 +425,22 @@ export function AuthModal({ onClose }: AuthModalProps) {
     setIsLoading(true);
     try {
       // Use Supabase for password reset — no backend cold-start dependency
-      const { supabase } = await import('@/lib/supabase');
+      const { supabase } = await import("@/lib/supabase");
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
       if (error) throw error;
       toast({
-        title: 'Reset email sent',
-        description: 'Please check your email for password reset instructions.',
+        title: "Reset email sent",
+        description: "Please check your email for password reset instructions.",
       });
       setResetEmailSent(true);
     } catch (error) {
       const message = error instanceof Error ? error.message : undefined;
       toast({
-        title: 'Reset failed',
-        description: message || 'Failed to send reset email. Please try again.',
-        variant: 'destructive',
+        title: "Reset failed",
+        description: message || "Failed to send reset email. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsLoading(false);
@@ -374,13 +461,12 @@ export function AuthModal({ onClose }: AuthModalProps) {
               <img src={logo} alt="Food Science Toolbox" className="h-10" />
             </div>
             <CardTitle className="text-2xl font-bold">
-              {resetEmailSent ? 'Check Your Email' : 'Reset Password'}
+              {resetEmailSent ? "Check Your Email" : "Reset Password"}
             </CardTitle>
             <CardDescription className="text-base">
               {resetEmailSent
-                ? 'We sent a password reset link to your email'
-                : 'Enter your email to receive a reset link'
-              }
+                ? "We sent a password reset link to your email"
+                : "Enter your email to receive a reset link"}
             </CardDescription>
           </CardHeader>
 
@@ -390,7 +476,8 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 <div className="bg-accent/10 rounded-lg p-4 text-center">
                   <Mail className="h-12 w-12 mx-auto mb-3 text-primary" />
                   <p className="text-sm text-muted-foreground">
-                    Click the link in your email to reset your password. If you don't see it, check your spam folder.
+                    Click the link in your email to reset your password. If you
+                    don't see it, check your spam folder.
                   </p>
                 </div>
                 <Button
@@ -399,7 +486,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                   onClick={() => {
                     setShowForgotPassword(false);
                     setResetEmailSent(false);
-                    setEmail('');
+                    setEmail("");
                   }}
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -420,7 +507,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`pl-10 h-11 bg-muted/30 border-muted-foreground/20 focus:border-primary transition-colors ${errors.email ? 'border-destructive' : ''}`}
+                      className={`pl-10 h-11 bg-muted/30 border-muted-foreground/20 focus:border-primary transition-colors ${errors.email ? "border-destructive" : ""}`}
                     />
                   </div>
                   {errors.email && (
@@ -468,7 +555,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div
+      data-auth-modal
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+    >
       {/* Backdrop with gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background/95 to-accent/5 backdrop-blur-md" />
 
@@ -530,7 +620,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className={`pl-10 h-11 bg-muted/30 border-muted-foreground/20 focus:border-primary transition-colors ${errors.email ? 'border-destructive' : ''}`}
+                      className={`pl-10 h-11 bg-muted/30 border-muted-foreground/20 focus:border-primary transition-colors ${errors.email ? "border-destructive" : ""}`}
                     />
                   </div>
                   {errors.email && (
@@ -541,7 +631,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-sm font-medium">
+                  <Label
+                    htmlFor="signin-password"
+                    className="text-sm font-medium"
+                  >
                     Password
                   </Label>
                   <div className="relative">
@@ -552,7 +645,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className={`pl-10 h-11 bg-muted/30 border-muted-foreground/20 focus:border-primary transition-colors ${errors.password ? 'border-destructive' : ''}`}
+                      className={`pl-10 h-11 bg-muted/30 border-muted-foreground/20 focus:border-primary transition-colors ${errors.password ? "border-destructive" : ""}`}
                     />
                   </div>
                   {errors.password && (
@@ -594,7 +687,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 {/* Name Fields */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-firstname" className="text-sm font-semibold">
+                    <Label
+                      htmlFor="signup-firstname"
+                      className="text-sm font-semibold"
+                    >
                       First Name
                     </Label>
                     <div className="relative group">
@@ -607,13 +703,17 @@ export function AuthModal({ onClose }: AuthModalProps) {
                         onChange={(e) => {
                           setFirstName(e.target.value);
                           if (errors.firstName) {
-                            setErrors(prev => ({ ...prev, firstName: undefined }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              firstName: undefined,
+                            }));
                           }
                         }}
-                        className={`pl-10 h-11 bg-background/50 border-2 transition-all duration-200 ${errors.firstName
-                            ? 'border-destructive focus-visible:border-destructive'
-                            : 'border-border focus-visible:border-primary'
-                          } ${firstName && !errors.firstName ? 'border-green-500/50' : ''}`}
+                        className={`pl-10 h-11 bg-background/50 border-2 transition-all duration-200 ${
+                          errors.firstName
+                            ? "border-destructive focus-visible:border-destructive"
+                            : "border-border focus-visible:border-primary"
+                        } ${firstName && !errors.firstName ? "border-green-500/50" : ""}`}
                       />
                     </div>
                     {errors.firstName && (
@@ -624,7 +724,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signup-lastname" className="text-sm font-semibold">
+                    <Label
+                      htmlFor="signup-lastname"
+                      className="text-sm font-semibold"
+                    >
                       Last Name
                     </Label>
                     <div className="relative group">
@@ -637,13 +740,17 @@ export function AuthModal({ onClose }: AuthModalProps) {
                         onChange={(e) => {
                           setLastName(e.target.value);
                           if (errors.lastName) {
-                            setErrors(prev => ({ ...prev, lastName: undefined }));
+                            setErrors((prev) => ({
+                              ...prev,
+                              lastName: undefined,
+                            }));
                           }
                         }}
-                        className={`pl-10 h-11 bg-background/50 border-2 transition-all duration-200 ${errors.lastName
-                            ? 'border-destructive focus-visible:border-destructive'
-                            : 'border-border focus-visible:border-primary'
-                          } ${lastName && !errors.lastName ? 'border-green-500/50' : ''}`}
+                        className={`pl-10 h-11 bg-background/50 border-2 transition-all duration-200 ${
+                          errors.lastName
+                            ? "border-destructive focus-visible:border-destructive"
+                            : "border-border focus-visible:border-primary"
+                        } ${lastName && !errors.lastName ? "border-green-500/50" : ""}`}
                       />
                     </div>
                     {errors.lastName && (
@@ -657,7 +764,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
 
                 {/* Email Field */}
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-sm font-semibold">
+                  <Label
+                    htmlFor="signup-email"
+                    className="text-sm font-semibold"
+                  >
                     Email Address
                   </Label>
                   <div className="relative group">
@@ -670,13 +780,14 @@ export function AuthModal({ onClose }: AuthModalProps) {
                       onChange={(e) => {
                         setEmail(e.target.value);
                         if (errors.email) {
-                          setErrors(prev => ({ ...prev, email: undefined }));
+                          setErrors((prev) => ({ ...prev, email: undefined }));
                         }
                       }}
-                      className={`pl-10 h-11 bg-background/50 border-2 transition-all duration-200 ${errors.email
-                          ? 'border-destructive focus-visible:border-destructive'
-                          : 'border-border focus-visible:border-primary'
-                        } ${email && !errors.email && emailSchema.safeParse(email).success ? 'border-green-500/50' : ''}`}
+                      className={`pl-10 h-11 bg-background/50 border-2 transition-all duration-200 ${
+                        errors.email
+                          ? "border-destructive focus-visible:border-destructive"
+                          : "border-border focus-visible:border-primary"
+                      } ${email && !errors.email && emailSchema.safeParse(email).success ? "border-green-500/50" : ""}`}
                     />
                   </div>
                   {errors.email && (
@@ -690,12 +801,17 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 {/* Password Field with Strength Indicator */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="signup-password" className="text-sm font-semibold">
+                    <Label
+                      htmlFor="signup-password"
+                      className="text-sm font-semibold"
+                    >
                       Password
                     </Label>
                     {password && (
                       <div className="flex items-center gap-1.5">
-                        <div className={`h-1.5 w-12 rounded-full ${passwordStrengthInfo.color} transition-all duration-300`} />
+                        <div
+                          className={`h-1.5 w-12 rounded-full ${passwordStrengthInfo.color} transition-all duration-300`}
+                        />
                         <span className="text-xs text-muted-foreground">
                           {passwordStrengthInfo.label}
                         </span>
@@ -712,13 +828,17 @@ export function AuthModal({ onClose }: AuthModalProps) {
                       onChange={(e) => {
                         setPassword(e.target.value);
                         if (errors.password) {
-                          setErrors(prev => ({ ...prev, password: undefined }));
+                          setErrors((prev) => ({
+                            ...prev,
+                            password: undefined,
+                          }));
                         }
                       }}
-                      className={`pl-10 pr-10 h-11 bg-background/50 border-2 transition-all duration-200 ${errors.password
-                          ? 'border-destructive focus-visible:border-destructive'
-                          : 'border-border focus-visible:border-primary'
-                        } ${password && !errors.password && passwordSchema.safeParse(password).success ? 'border-green-500/50' : ''}`}
+                      className={`pl-10 pr-10 h-11 bg-background/50 border-2 transition-all duration-200 ${
+                        errors.password
+                          ? "border-destructive focus-visible:border-destructive"
+                          : "border-border focus-visible:border-primary"
+                      } ${password && !errors.password && passwordSchema.safeParse(password).success ? "border-green-500/50" : ""}`}
                     />
                     <button
                       type="button"
@@ -744,7 +864,13 @@ export function AuthModal({ onClose }: AuthModalProps) {
                           ) : (
                             <div className="h-3 w-3 rounded-full border border-muted-foreground/30 flex-shrink-0" />
                           )}
-                          <span className={req.met ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
+                          <span
+                            className={
+                              req.met
+                                ? "text-green-600 dark:text-green-400"
+                                : "text-muted-foreground"
+                            }
+                          >
                             {req.label}
                           </span>
                         </div>
@@ -769,7 +895,7 @@ export function AuthModal({ onClose }: AuthModalProps) {
                       onCheckedChange={(checked) => {
                         setAcceptedTerms(checked === true);
                         if (errors.terms) {
-                          setErrors(prev => ({ ...prev, terms: undefined }));
+                          setErrors((prev) => ({ ...prev, terms: undefined }));
                         }
                       }}
                       className="mt-0.5"
@@ -778,16 +904,28 @@ export function AuthModal({ onClose }: AuthModalProps) {
                       htmlFor="terms"
                       className="text-xs leading-relaxed cursor-pointer flex-1"
                     >
-                      I have read and agree to the{' '}
-                      <a href="/legal/terms-of-service" target="_blank" className="text-primary hover:underline">
+                      I have read and agree to the{" "}
+                      <a
+                        href="/legal/terms-of-service"
+                        target="_blank"
+                        className="text-primary hover:underline"
+                      >
                         Terms of Service
                       </a>
-                      {', '}
-                      <a href="/legal/privacy-policy" target="_blank" className="text-primary hover:underline">
+                      {", "}
+                      <a
+                        href="/legal/privacy-policy"
+                        target="_blank"
+                        className="text-primary hover:underline"
+                      >
                         Privacy Policy
                       </a>
-                      {', and '}
-                      <a href="/legal/acceptable-use" target="_blank" className="text-primary hover:underline">
+                      {", and "}
+                      <a
+                        href="/legal/acceptable-use"
+                        target="_blank"
+                        className="text-primary hover:underline"
+                      >
                         Acceptable Use Policy
                       </a>
                       .
@@ -823,7 +961,10 @@ export function AuthModal({ onClose }: AuthModalProps) {
                 {/* Free Trial Banner - Compact */}
                 <div className="bg-gradient-to-r from-primary/10 to-accent/10 rounded-lg p-2.5 border border-primary/20">
                   <p className="text-xs text-center text-muted-foreground">
-                    <span className="font-semibold text-foreground">Free 7-day trial</span> • 10 free generations • No credit card required
+                    <span className="font-semibold text-foreground">
+                      Free 7-day trial
+                    </span>{" "}
+                    • 10 free generations • No credit card required
                   </p>
                 </div>
               </form>

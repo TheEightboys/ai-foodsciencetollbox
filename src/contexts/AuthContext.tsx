@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   ReactNode,
 } from "react";
@@ -44,6 +45,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  // Guard: tracks whether a sign-in is in progress so that the
+  // onAuthStateChange listener does not interfere (e.g. a spurious
+  // SIGNED_OUT event or duplicate token exchange).
+  const signingInRef = useRef(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -82,6 +87,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Skip listener processing while a direct signIn/signUp call is
+      // in-flight — the signIn function handles setUser itself and the
+      // listener would otherwise cause a race condition or duplicate
+      // token exchange that can momentarily clear the user.
+      if (signingInRef.current) return;
+
       if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
         try {
           const djangoAuth = await restoreSupabaseSession();
@@ -137,9 +148,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    signingInRef.current = true;
     try {
       const response = await supabaseSignIn(email, password);
       setUser(response.user as User);
+      setLoading(false);
       return { error: null };
     } catch (error) {
       const err = error as Error;
@@ -150,6 +163,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             "Login failed. Please check your credentials and try again.",
         },
       };
+    } finally {
+      signingInRef.current = false;
     }
   };
 
