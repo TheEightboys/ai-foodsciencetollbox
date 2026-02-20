@@ -1,11 +1,18 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { authService, User } from '@/lib/api/auth';
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
+import { authService, User } from "@/lib/api/auth";
+import { supabase } from "@/lib/supabase";
 import {
   supabaseSignIn,
   supabaseSignUp,
   supabaseSignOut,
   restoreSupabaseSession,
-} from '@/lib/api/supabaseAuth';
+} from "@/lib/api/supabaseAuth";
 
 interface AuthError {
   message?: string;
@@ -18,8 +25,16 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isAuthenticated: boolean;
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: AuthError | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+  ) => Promise<{ error: AuthError | null }>;
+  signIn: (
+    email: string,
+    password: string,
+  ) => Promise<{ error: AuthError | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -51,8 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const currentUser = await authService.getCurrentUser();
           setUser(currentUser);
         } catch {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
           setUser(null);
         }
       } else {
@@ -62,9 +77,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     checkAuth();
+
+    // Listen for Supabase auth events (e.g. Google OAuth callback, token refresh)
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) {
+        try {
+          const djangoAuth = await restoreSupabaseSession();
+          if (djangoAuth) {
+            setUser(djangoAuth.user as User);
+            setLoading(false);
+          }
+        } catch {
+          // Fallback: build user from Supabase session metadata
+          const meta = session.user?.user_metadata || {};
+          const fullName: string = meta.full_name || "";
+          const parts = fullName.trim().split(/\s+/);
+          setUser({
+            id: 0,
+            email: session.user?.email || "",
+            first_name: meta.first_name || meta.given_name || parts[0] || "",
+            last_name:
+              meta.last_name ||
+              meta.family_name ||
+              parts.slice(1).join(" ") ||
+              "",
+          } as User);
+          setLoading(false);
+        }
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+  ) => {
     try {
       const result = await supabaseSignUp(email, password, firstName, lastName);
       if (result.user) {
@@ -73,7 +128,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null, message: result.message };
     } catch (error) {
       const err = error as Error;
-      return { error: { message: err.message || 'Registration failed. Please try again.' } };
+      return {
+        error: {
+          message: err.message || "Registration failed. Please try again.",
+        },
+      };
     }
   };
 
@@ -84,7 +143,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { error: null };
     } catch (error) {
       const err = error as Error;
-      return { error: { message: err.message || 'Login failed. Please check your credentials and try again.' } };
+      return {
+        error: {
+          message:
+            err.message ||
+            "Login failed. Please check your credentials and try again.",
+        },
+      };
     }
   };
 
@@ -126,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export function useAuth() {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 }

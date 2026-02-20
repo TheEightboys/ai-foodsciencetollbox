@@ -8,7 +8,7 @@ services:
     region: oregon
     rootDir: Backend
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
-    startCommand: python manage.py migrate --noinput && gunicorn config.wsgi:application
+    startCommand: python manage.py migrate --noinput && bash start.sh
     branch: main
     plan: free
     autoDeploy: true

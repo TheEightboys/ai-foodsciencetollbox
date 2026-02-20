@@ -80,16 +80,6 @@ urlpatterns = [
 import logging
 logger = logging.getLogger(__name__)
 
-# Try to include downloads URLs - use lazy evaluation
-try:
-    # Check if we can import the views first (this will catch import errors early)
-    from apps.downloads import views as downloads_views
-    # If views import successfully, include the URLs
-    urlpatterns.append(path('api/downloads/', include('apps.downloads.urls')))
-except Exception as e:
-    logger.warning(f"Could not include apps.downloads.urls: {e}. Downloads endpoints will not be available.")
-    # Continue without downloads endpoints - they're optional
-
 if settings.DEBUG:
     try:
         import debug_toolbar

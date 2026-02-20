@@ -200,16 +200,22 @@ echo "DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-not set}"
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.production}
 
 # Start Gunicorn - use exec to replace shell process
+# NOTE: 1 worker on Render free tier (512 MB RAM) - avoids OOM kills.
+# --preload is intentionally omitted: it loads the full Django app in the
+# master process before forking, which doubles memory usage on free tier.
+# AI API calls (OpenAI/OpenRouter) can take 30-90 s, so timeout=120 is safe
+# while still allowing the health-check watchdog to recycle truly stuck workers.
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --workers 2 \
-    --timeout 300 \
+    --workers 1 \
+    --threads 2 \
+    --timeout 120 \
+    --graceful-timeout 30 \
     --keep-alive 5 \
-    --max-requests 1000 \
-    --max-requests-jitter 100 \
+    --max-requests 500 \
+    --max-requests-jitter 50 \
     --access-logfile - \
     --error-logfile - \
     --log-level info \
     --capture-output \
-    --enable-stdio-inheritance \
-    --preload
+    --enable-stdio-inheritance
