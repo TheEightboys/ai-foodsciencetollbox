@@ -45,6 +45,11 @@ async function exchangeSupabaseToken(supabaseAccessToken: string): Promise<Djang
   return response.data;
 }
 
+/** Public helper used by GoogleCallback to exchange a live Supabase session. */
+export async function exchangeSupabaseTokenForDjango(session: Session): Promise<DjangoAuthResponse> {
+  return exchangeOrFallback(session);
+}
+
 /**
  * Build a fallback DjangoAuthResponse from a Supabase session when the backend
  * is unavailable. Stores the token for lazy exchange later.
@@ -124,6 +129,25 @@ export async function supabaseSignUp(
 
 /** Initiate Google OAuth via Supabase (redirects the browser). */
 export async function supabaseSignInWithGoogle(): Promise<void> {
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+
+  // If a Google Client ID is configured, use a direct OAuth flow so that
+  // Google's consent screen shows the production domain instead of Supabase.
+  if (googleClientId) {
+    const redirectUri = `${window.location.origin}/auth/google/callback`;
+    const params = new URLSearchParams({
+      client_id: googleClientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'offline',
+      prompt: 'select_account',
+    });
+    window.location.href = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
+    return;
+  }
+
+  // Fallback: use Supabase OAuth (shows Supabase domain on consent screen)
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -132,6 +156,18 @@ export async function supabaseSignInWithGoogle(): Promise<void> {
     },
   });
   if (error) throw new Error(error.message);
+}
+
+/** Exchange a Google authorization code for Django JWT tokens (direct backend call). */
+export async function exchangeGoogleCode(code: string): Promise<DjangoAuthResponse> {
+  const redirectUri = `${window.location.origin}/auth/google/callback`;
+  const response = await apiClient.post<DjangoAuthResponse>('/accounts/google/exchange/', {
+    code,
+    redirect_uri: redirectUri,
+  });
+  localStorage.setItem('access_token', response.data.access);
+  localStorage.setItem('refresh_token', response.data.refresh);
+  return response.data;
 }
 
 /**

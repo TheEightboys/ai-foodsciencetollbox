@@ -15,7 +15,7 @@ from .views import (
     ContactSupportView,
     TestEmailView
 )
-from .google_oauth import GoogleLoginView, GoogleCallbackView
+from .google_oauth import GoogleLoginView, GoogleCallbackView, GoogleCodeExchangeView
 from .supabase_views import SupabaseTokenExchangeView
 
 app_name = 'accounts'
@@ -40,4 +40,6 @@ urlpatterns = [
     # Google OAuth (legacy — kept for backwards compat)
     path('google/login/', GoogleLoginView.as_view(), name='google-login'),
     path('google/callback/', GoogleCallbackView.as_view(), name='google-callback'),
+    # Google OAuth code exchange — frontend handles redirect, posts code here
+    path('google/exchange/', GoogleCodeExchangeView.as_view(), name='google-exchange'),
 ]

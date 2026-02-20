@@ -240,3 +240,131 @@ class GoogleCallbackView(APIView):
             frontend_url = settings.FRONTEND_URL
             return redirect(f"{frontend_url}/auth/google/callback?error=oauth_failed")
 
+
+class GoogleCodeExchangeView(APIView):
+    """
+    Exchange a Google authorization code for Django JWT tokens.
+
+    Called by the frontend after Google redirects back to the frontend
+    with ?code=...  This lets the redirect_uri be the production frontend
+    domain (e.g. https://ai.foodsciencetoolbox.com/auth/google/callback)
+    so that Google's consent screen shows that domain instead of the
+    Supabase or backend URL.
+
+    POST /api/accounts/google/exchange/
+    Body: { "code": "<auth_code>", "redirect_uri": "<frontend_callback_url>" }
+    Returns: { "access": "<jwt>", "refresh": "<jwt>", "user": { ... } }
+    """
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        if settings.DEBUG:
+            os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+        code = request.data.get('code')
+        redirect_uri = request.data.get('redirect_uri')
+
+        if not code or not redirect_uri:
+            return Response(
+                {'error': 'Both "code" and "redirect_uri" are required.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        client_id = settings.GOOGLE_OAUTH_CLIENT_ID
+        client_secret = settings.GOOGLE_OAUTH_CLIENT_SECRET
+
+        if not client_id or not client_secret:
+            logger.error('Google OAuth credentials not configured')
+            return Response(
+                {'error': 'Google OAuth is not configured. Please contact support.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        try:
+            flow = Flow.from_client_config(
+                {
+                    "web": {
+                        "client_id": client_id,
+                        "client_secret": client_secret,
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                        "redirect_uris": [redirect_uri],
+                    }
+                },
+                scopes=SCOPES,
+            )
+            flow.redirect_uri = redirect_uri
+            flow.fetch_token(code=code)
+
+            credentials = flow.credentials
+            idinfo = id_token.verify_oauth2_token(
+                credentials.id_token,
+                google_requests.Request(),
+                client_id,
+            )
+
+            if idinfo['iss'] not in ['accounts.google.com', 'https://accounts.google.com']:
+                raise ValueError('Wrong token issuer.')
+
+            email = idinfo.get('email')
+            first_name = idinfo.get('given_name', '')
+            last_name = idinfo.get('family_name', '')
+            email_verified = idinfo.get('email_verified', False)
+
+            if not email:
+                raise ValueError('Email not provided by Google.')
+
+            # Get or create the Django user
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    'first_name': first_name,
+                    'last_name': last_name,
+                    'is_active': True,
+                },
+            )
+
+            if not created:
+                updated = False
+                if not user.first_name and first_name:
+                    user.first_name = first_name
+                    updated = True
+                if not user.last_name and last_name:
+                    user.last_name = last_name
+                    updated = True
+                if not user.is_active:
+                    user.is_active = True
+                    updated = True
+                if updated:
+                    user.save()
+
+            if not hasattr(user, 'teacher_profile'):
+                TeacherProfile.objects.create(user=user, email_verified=email_verified)
+            elif not user.teacher_profile.email_verified and email_verified:
+                user.teacher_profile.email_verified = True
+                user.teacher_profile.save()
+
+            if not hasattr(user, 'preferences'):
+                UserPreferences.objects.create(user=user)
+
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'id': user.id,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                },
+            })
+
+        except ValueError as e:
+            logger.error(f'Google code exchange validation error: {e}', exc_info=True)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f'Google code exchange error: {e}', exc_info=True)
+            return Response(
+                {'error': 'OAuth code exchange failed. Please try again.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
