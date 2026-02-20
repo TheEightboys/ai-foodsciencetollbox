@@ -159,8 +159,9 @@ export async function supabaseSignInWithGoogle(): Promise<void> {
 }
 
 /** Exchange a Google authorization code for Django JWT tokens (direct backend call).
- *  Uses a shorter timeout (30s) so the retry logic in GoogleCallback can kick in
- *  quickly rather than waiting the full 120s default.
+ *  Google auth codes are SINGLE-USE so this must NOT be retried.
+ *  The caller (GoogleCallback) ensures the backend is awake before calling this.
+ *  Timeout is 60s to allow for the backend → Google token exchange round-trip.
  */
 export async function exchangeGoogleCode(code: string): Promise<DjangoAuthResponse> {
   const redirectUri = `${window.location.origin}/auth/google/callback`;
@@ -168,7 +169,7 @@ export async function exchangeGoogleCode(code: string): Promise<DjangoAuthRespon
     const response = await apiClient.post<DjangoAuthResponse>('/accounts/google/exchange/', {
       code,
       redirect_uri: redirectUri,
-    }, { timeout: 30_000 });
+    }, { timeout: 60_000 });
     localStorage.setItem('access_token', response.data.access);
     localStorage.setItem('refresh_token', response.data.refresh);
     return response.data;

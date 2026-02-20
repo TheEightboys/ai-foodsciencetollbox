@@ -131,69 +131,17 @@ python manage.py create_superuser --email admin@foodsciencetoolbox.com --passwor
     echo "You can run 'python manage.py create_superuser' manually later."
 }
 
-# Test if Django can import the WSGI application
+# Test if Django can import the WSGI application (single lightweight check)
 echo "Testing WSGI application import..."
 if python -c "import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.production'); import django; django.setup(); from config.wsgi import application; print('WSGI application loaded successfully')" 2>&1; then
     echo "✓ WSGI application test passed"
 else
-    echo "ERROR: Failed to load WSGI application!"
-    echo "Attempting to show detailed error..."
-    python -c "import os; os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.production'); import django; django.setup(); from config.wsgi import application" 2>&1 || true
-    echo "Attempting to continue anyway..."
-fi
-
-# Verify Django can start (database connection errors are expected if DB isn't ready)
-echo "Verifying Django configuration..."
-# Run check - database connection errors are OK during startup
-# The check will still validate other things like URL config, models, etc.
-python manage.py check 2>&1 | grep -v "connection to server" | grep -v "Connection refused" || {
-    echo "NOTE: Django check completed (database connection errors are expected if DB isn't ready yet)"
-}
-
-# Test WSGI import one more time before starting
-echo "Final WSGI application test..."
-if python -c "
-import os
-import sys
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.production')
-try:
-    import django
-    django.setup()
-    from config.wsgi import application
-    print('✓ WSGI application is ready')
-    sys.exit(0)
-except Exception as e:
-    print(f'ERROR: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-" 2>&1; then
-    echo "✓ WSGI test passed"
-else
-    echo "ERROR: WSGI application failed to load!"
-    echo "Showing detailed error..."
-    python -c "
-import os
-import sys
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings.production')
-try:
-    import django
-    django.setup()
-    from config.wsgi import application
-except Exception as e:
-    print(f'ERROR: {e}')
-    import traceback
-    traceback.print_exc()
-    sys.exit(1)
-" 2>&1 || true
-    echo "WARNING: Continuing despite WSGI test failure..."
+    echo "WARNING: WSGI import test failed, continuing anyway..."
 fi
 
 # Start Gunicorn with better error handling
 echo "Starting Gunicorn on 0.0.0.0:8000..."
-echo "Gunicorn will bind to 0.0.0.0:8000 and serve the Django application"
 echo "Current working directory: $(pwd)"
-echo "Python path: $(which python)"
 echo "DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-not set}"
 
 # Ensure DJANGO_SETTINGS_MODULE is set

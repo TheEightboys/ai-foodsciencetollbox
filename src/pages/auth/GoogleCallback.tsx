@@ -6,35 +6,26 @@ import {
   exchangeGoogleCode,
 } from "@/lib/api/supabaseAuth";
 import { useToast } from "@/hooks/use-toast";
+import apiClient from "@/lib/api/client";
 
 /**
- * Retry wrapper: calls `fn` up to `maxRetries` times with a delay between attempts.
- * This handles Render free-tier cold starts where the backend worker may be
- * rebooting (WORKER TIMEOUT / OOM) when the request arrives.
+ * Wake the backend before attempting the one-shot Google code exchange.
+ * Render free-tier workers can be dead (OOM / cold start);
+ * hitting /health/ first ensures a live worker is ready to handle the
+ * token exchange without wasting the single-use Google auth code.
+ *
+ * Retries the health check up to `maxAttempts` times.
  */
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxRetries = 3,
-  delayMs = 3000,
-): Promise<T> {
-  let lastError: unknown;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+async function ensureBackendReady(maxAttempts = 5, delayMs = 3000): Promise<void> {
+  for (let i = 0; i < maxAttempts; i++) {
     try {
-      return await fn();
-    } catch (err) {
-      lastError = err;
-      const isTimeout =
-        err instanceof Error &&
-        (err.message.includes("timeout") ||
-          err.message.includes("Network Error") ||
-          err.message.includes("502"));
-      // Only retry on timeouts / network errors — not on validation errors
-      if (!isTimeout || attempt === maxRetries) throw err;
-      // Wait before retrying (backend worker needs time to restart)
+      await apiClient.get("/health/", { timeout: 10_000 });
+      return; // Backend is alive
+    } catch {
+      if (i === maxAttempts - 1) throw new Error("Backend is not responding. Please try again later.");
       await new Promise((r) => setTimeout(r, delayMs));
     }
   }
-  throw lastError;
 }
 
 export default function GoogleCallback() {
@@ -53,17 +44,27 @@ export default function GoogleCallback() {
 
     // ── Direct Google OAuth flow (VITE_GOOGLE_CLIENT_ID is set) ──────────────
     // Google redirected here with ?code=... — exchange it via the Django backend.
+    //
+    // IMPORTANT: Google auth codes are SINGLE-USE. We must NOT retry the
+    // exchange call itself — if the backend consumes the code but crashes
+    // before responding, the code is gone. Instead we first wake the backend
+    // with a health check, then send the code exactly once.
     if (code) {
-      setStatusMessage("Connecting to server...");
-      withRetry(() => exchangeGoogleCode(code), 3, 4000)
-        .then((auth) => {
+      (async () => {
+        try {
+          // Step 1: Make sure the backend worker is alive
+          setStatusMessage("Waking up server...");
+          await ensureBackendReady(5, 3000);
+
+          // Step 2: Exchange the code (one attempt only — code is single-use)
+          setStatusMessage("Completing sign in...");
+          const auth = await exchangeGoogleCode(code);
           toast({
             title: "Welcome!",
             description: `Signed in as ${auth.user.email}`,
           });
           navigate("/dashboard");
-        })
-        .catch((err: unknown) => {
+        } catch (err: unknown) {
           const message =
             err instanceof Error ? err.message : "Google sign-in failed.";
           toast({
@@ -72,7 +73,8 @@ export default function GoogleCallback() {
             variant: "destructive",
           });
           navigate("/");
-        });
+        }
+      })();
       return;
     }
 
