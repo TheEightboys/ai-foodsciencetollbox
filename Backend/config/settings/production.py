@@ -55,11 +55,17 @@ CORS_EXPOSE_HEADERS = [
 # Ensure CORS headers are always sent, even on error responses
 CORS_ALLOW_HEADERS = CORS_ALLOWED_HEADERS  # Alias for compatibility
 
-# If specific origins are provided, use them instead
+# If specific *production* origins are provided, use them instead.
+# Safety: if the env var only contains localhost URLs, keep CORS_ALLOW_ALL_ORIGINS=True
+# so the production frontend is not accidentally blocked.
 CORS_ALLOWED_ORIGINS_STR = config('CORS_ALLOWED_ORIGINS', default='')
 if CORS_ALLOWED_ORIGINS_STR and CORS_ALLOWED_ORIGINS_STR != '*':
-    CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = [s.strip() for s in CORS_ALLOWED_ORIGINS_STR.split(',') if s.strip()]
+    _origins = [s.strip() for s in CORS_ALLOWED_ORIGINS_STR.split(',') if s.strip()]
+    _has_production = any(o for o in _origins if 'localhost' not in o and '127.0.0.1' not in o)
+    if _has_production:
+        CORS_ALLOW_ALL_ORIGINS = False
+        CORS_ALLOWED_ORIGINS = _origins
+    # else: keep CORS_ALLOW_ALL_ORIGINS = True (set above)
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases

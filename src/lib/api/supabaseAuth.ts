@@ -161,13 +161,23 @@ export async function supabaseSignInWithGoogle(): Promise<void> {
 /** Exchange a Google authorization code for Django JWT tokens (direct backend call). */
 export async function exchangeGoogleCode(code: string): Promise<DjangoAuthResponse> {
   const redirectUri = `${window.location.origin}/auth/google/callback`;
-  const response = await apiClient.post<DjangoAuthResponse>('/accounts/google/exchange/', {
-    code,
-    redirect_uri: redirectUri,
-  });
-  localStorage.setItem('access_token', response.data.access);
-  localStorage.setItem('refresh_token', response.data.refresh);
-  return response.data;
+  try {
+    const response = await apiClient.post<DjangoAuthResponse>('/accounts/google/exchange/', {
+      code,
+      redirect_uri: redirectUri,
+    });
+    localStorage.setItem('access_token', response.data.access);
+    localStorage.setItem('refresh_token', response.data.refresh);
+    return response.data;
+  } catch (err: unknown) {
+    // Surface the backend error message instead of a generic "status code 502"
+    if (err && typeof err === 'object' && 'response' in err) {
+      const axiosErr = err as { response?: { data?: { error?: string }; status?: number } };
+      const msg = axiosErr.response?.data?.error;
+      if (msg) throw new Error(msg);
+    }
+    throw err;
+  }
 }
 
 /**

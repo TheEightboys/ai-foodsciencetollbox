@@ -280,6 +280,17 @@ class GoogleCodeExchangeView(APIView):
             )
 
         try:
+            # Log the credentials being used (masked) for debugging.
+            logger.info(
+                f'Google code exchange: client_id={client_id[:20]}…, '
+                f'client_secret_len={len(client_secret)}, '
+                f'redirect_uri={redirect_uri!r}, code_len={len(code)}'
+            )
+
+            # Strip any accidental whitespace from credentials (common env-var issue).
+            client_id = client_id.strip()
+            client_secret = client_secret.strip()
+
             # Exchange the authorization code for tokens by calling Google's
             # token endpoint directly — avoids google_auth_oauthlib Flow quirks.
             token_response = _requests.post(
@@ -291,7 +302,7 @@ class GoogleCodeExchangeView(APIView):
                     'redirect_uri': redirect_uri,
                     'grant_type': 'authorization_code',
                 },
-                timeout=10,
+                timeout=15,
             )
 
             token_data = token_response.json()
@@ -301,14 +312,27 @@ class GoogleCodeExchangeView(APIView):
                 google_desc = token_data.get('error_description', '')
                 logger.error(
                     f'Google token exchange failed: {google_error} — {google_desc} '
-                    f'(redirect_uri={redirect_uri!r})'
+                    f'(redirect_uri={redirect_uri!r}, '
+                    f'client_id={client_id[:20]}…, '
+                    f'status={token_response.status_code})'
                 )
-                # Map redirect_uri_mismatch to a clear user-facing message.
+                # Map specific errors to clear user-facing messages.
                 if google_error == 'redirect_uri_mismatch':
                     return Response(
                         {
                             'error': (
                                 'Google sign-in configuration error: redirect URI mismatch. '
+                                'Please contact support.'
+                            )
+                        },
+                        status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    )
+                if google_error == 'invalid_client':
+                    return Response(
+                        {
+                            'error': (
+                                'Google sign-in configuration error: invalid client credentials. '
+                                'The server\'s Google OAuth client ID or secret may be incorrect. '
                                 'Please contact support.'
                             )
                         },
