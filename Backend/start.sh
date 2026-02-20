@@ -149,20 +149,19 @@ export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.producti
 
 # Start Gunicorn - use exec to replace shell process
 # NOTE: Render free tier has only 512 MB RAM.
-# Using gevent async worker so that long-running OpenAI/AI generation calls
-# do NOT block health-check or other requests. A single sync worker was
-# keeping the process busy during AI calls; Render's health check timed out
-# (~30 s) and killed the worker in an infinite restart loop.
-# gevent greenlets yield the CPU while waiting for I/O (OpenAI API, DB, etc.)
-# so health checks and other small requests are always served promptly.
-# --worker-connections 100: max concurrent greenlets per worker (well below
-# Render's 512 MB limit at this concurrency level).
-# Timeout set to 300s to cover slow OpenAI streaming/generation calls.
+# Using gthread worker (built into gunicorn, no extra deps) so that long-running
+# OpenAI/AI generation calls do NOT block health checks or other requests.
+# With a single sync worker, the process was busy during AI API calls; Render's
+# 30s health-check timeout killed the worker in an infinite restart loop.
+# gthread threads share the same process heap (unlike multiple workers) so
+# memory stays well under 512 MB. 4 threads comfortably handles concurrent
+# AI generation + health-check + other small requests.
+# Timeout set to 300s to cover slow OpenAI generation calls.
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --worker-class gevent \
+    --worker-class gthread \
     --workers 1 \
-    --worker-connections 100 \
+    --threads 4 \
     --timeout 300 \
     --graceful-timeout 30 \
     --keep-alive 5 \
