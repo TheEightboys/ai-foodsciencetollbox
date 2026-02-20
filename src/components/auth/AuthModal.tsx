@@ -221,17 +221,13 @@ export function AuthModal({ onClose }: AuthModalProps) {
         onClose();
       } else {
         // When rendered inside ProtectedRoute (no onClose), the auth context
-        // update should automatically hide this modal. As a safety net, if the
-        // modal is somehow still visible after a short delay, force a reload so
-        // the page picks up the new Supabase session.
+        // update should automatically hide this modal. Force a page reload
+        // after a short delay to guarantee the dashboard loads cleanly.
+        // This is the most reliable approach because Supabase's delayed
+        // onAuthStateChange events can momentarily reset auth state.
         setTimeout(() => {
-          // If document still contains this modal, something went wrong with the
-          // context re-render — reload the page.
-          const stillVisible = document.querySelector("[data-auth-modal]");
-          if (stillVisible) {
-            window.location.reload();
-          }
-        }, 500);
+          window.location.reload();
+        }, 300);
       }
     }
   };

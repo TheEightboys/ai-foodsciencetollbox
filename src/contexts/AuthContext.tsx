@@ -153,8 +153,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await supabaseSignIn(email, password);
       setUser(response.user as User);
       setLoading(false);
+      // Keep the guard active for 3 seconds AFTER sign-in completes.
+      // Supabase may fire delayed onAuthStateChange events (SIGNED_OUT
+      // from clearing an old session, then SIGNED_IN) which would
+      // momentarily reset user to null and flash the login modal.
+      setTimeout(() => {
+        signingInRef.current = false;
+      }, 3000);
       return { error: null };
     } catch (error) {
+      signingInRef.current = false;
       const err = error as Error;
       return {
         error: {
@@ -163,8 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             "Login failed. Please check your credentials and try again.",
         },
       };
-    } finally {
-      signingInRef.current = false;
     }
   };
 
