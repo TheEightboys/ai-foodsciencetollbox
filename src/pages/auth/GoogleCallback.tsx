@@ -16,13 +16,17 @@ import apiClient from "@/lib/api/client";
  *
  * Retries the health check up to `maxAttempts` times.
  */
-async function ensureBackendReady(maxAttempts = 5, delayMs = 3000): Promise<void> {
+async function ensureBackendReady(
+  maxAttempts = 5,
+  delayMs = 3000,
+): Promise<void> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       await apiClient.get("/health/", { timeout: 10_000 });
       return; // Backend is alive
     } catch {
-      if (i === maxAttempts - 1) throw new Error("Backend is not responding. Please try again later.");
+      if (i === maxAttempts - 1)
+        throw new Error("Backend is not responding. Please try again later.");
       await new Promise((r) => setTimeout(r, delayMs));
     }
   }
