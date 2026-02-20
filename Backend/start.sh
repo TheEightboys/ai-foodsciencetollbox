@@ -200,21 +200,21 @@ echo "DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-not set}"
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.production}
 
 # Start Gunicorn - use exec to replace shell process
-# NOTE: gthread worker on Render free tier (512 MB RAM).
-# gthread uses OS threads — each thread handles one request independently so a
-# slow external call (Google OAuth token exchange, OpenAI) only blocks that
-# thread, not the whole process. No extra packages required (built into gunicorn).
-# 1 worker × 4 threads = 4 concurrent requests on 512 MB RAM.
+# NOTE: Render free tier has only 512 MB RAM.
+# Using sync worker (lowest memory footprint). gthread duplicates Python
+# interpreter state per thread which pushes past the 512 MB limit and causes
+# repeated SIGKILL / WORKER TIMEOUT crashes.
+# 1 sync worker keeps memory well under 512 MB; --preload shares app code.
+# Timeout set to 180s to cover slow Google OAuth + OpenAI calls.
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --worker-class gthread \
     --workers 1 \
-    --threads 4 \
-    --timeout 120 \
+    --timeout 180 \
     --graceful-timeout 30 \
     --keep-alive 5 \
-    --max-requests 500 \
-    --max-requests-jitter 50 \
+    --max-requests 200 \
+    --max-requests-jitter 25 \
+    --preload \
     --access-logfile - \
     --error-logfile - \
     --log-level info \
