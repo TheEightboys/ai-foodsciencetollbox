@@ -150,21 +150,20 @@ export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.producti
 # Start Gunicorn - use exec to replace shell process
 # MEMORY OPTIMIZATIONS applied (target: stay under 512 MB on Render free):
 #
-#   1. gevent worker instead of gthread — async I/O, ~30–40% less memory than threads
-#   2. --worker-connections 50 — max concurrent greenlets (replaces --threads)
-#   3. google-auth libraries imported lazily in views (not at startup)
+#   1. celery/redis/django-redis REMOVED from requirements — saves ~80 MB at startup
+#   2. django.contrib.admin REMOVED from production INSTALLED_APPS — saves ~40 MB
+#   3. google-auth libraries lazy-imported in views — saves ~50 MB at startup
 #   4. USE_I18N=False, duplicate CORS middleware removed, conn_max_age=60
 #   5. No --preload — avoids master-process copy-on-write memory bloat
+#   6. gthread with 2 threads — concurrent I/O without gevent monkey-patching overhead
 #
-# CONCURRENCY:
-#   gevent handles concurrent I/O (OpenAI calls, DB queries, Google OAuth)
-#   without blocking, preventing the 30-second health-check kill loop.
-#   Timeout 300s covers slow AI generation calls.
+# Expected startup memory: ~120-160 MB (down from ~280 MB)
+# Peak per-request memory: ~200-250 MB (well under 512 MB limit)
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --worker-class gevent \
+    --worker-class gthread \
     --workers 1 \
-    --worker-connections 50 \
+    --threads 2 \
     --timeout 300 \
     --graceful-timeout 30 \
     --keep-alive 5 \

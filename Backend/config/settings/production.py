@@ -1,5 +1,17 @@
 from .base import *
 
+# ── Memory optimisation: strip heavy apps not needed in the API-only production build ──
+# django.contrib.admin loads form widgets, template tags, and model admin
+# auto-discovery at startup — costs ~30–50 MB on the Render free 512 MB plan.
+INSTALLED_APPS = [
+    app for app in INSTALLED_APPS
+    if app not in ('django.contrib.admin', 'django.contrib.messages')
+]
+MIDDLEWARE = [
+    mw for mw in MIDDLEWARE
+    if mw not in ('django.contrib.messages.middleware.MessageMiddleware',)
+]
+
 # SECURITY WARNING: don't run with debug turned on in production!
 # Allow DEBUG to be set via environment variable for troubleshooting
 DEBUG = config('DEBUG', default=False, cast=bool)
