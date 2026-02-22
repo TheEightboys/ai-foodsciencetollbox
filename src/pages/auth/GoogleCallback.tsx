@@ -6,6 +6,7 @@ import {
   exchangeGoogleCode,
 } from "@/lib/api/supabaseAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import apiClient from "@/lib/api/client";
 
 /**
@@ -35,6 +36,7 @@ async function ensureBackendReady(
 export default function GoogleCallback() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { refreshUser } = useAuth();
   const hasRun = useRef(false);
   const [statusMessage, setStatusMessage] = useState("Completing sign in...");
 
@@ -63,6 +65,9 @@ export default function GoogleCallback() {
           // Step 2: Exchange the code (one attempt only — code is single-use)
           setStatusMessage("Completing sign in...");
           const auth = await exchangeGoogleCode(code);
+          // Step 3: Update AuthContext so ProtectedRoute sees the user immediately
+          // without this, user stays null in context and the login card shows on /dashboard
+          await refreshUser();
           toast({
             title: "Welcome!",
             description: `Signed in as ${auth.user.email}`,
@@ -136,7 +141,7 @@ export default function GoogleCallback() {
       clearTimeout(fallbackTimer);
       subscription.unsubscribe();
     };
-  }, [navigate, toast]);
+  }, [navigate, toast, refreshUser]);
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
