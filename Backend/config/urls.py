@@ -5,7 +5,7 @@ The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.0/topics/http/urls/
 """
 
-from django.contrib import admin
+from django.apps import apps as django_apps
 from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
@@ -58,7 +58,6 @@ def favicon_view(request):
 urlpatterns = [
     path('', root_view, name='root'),
     path('favicon.ico', favicon_view, name='favicon'),
-    path('admin/', admin.site.urls),
     # API endpoints - more specific paths first
     path('api/accounts/', include('apps.accounts.urls')),
     path('api/memberships/', include('apps.memberships.urls')),
@@ -74,6 +73,11 @@ urlpatterns = [
     re_path(r'^api$', api_root_view, name='api-root-no-slash'),  # Without trailing slash - must come first
     path('api/', api_root_view, name='api-root'),  # With trailing slash
 ]
+
+# Only expose /admin/ when django.contrib.admin is installed (stripped in production)
+if django_apps.is_installed('django.contrib.admin'):
+    from django.contrib import admin
+    urlpatterns += [path('admin/', admin.site.urls)]
 
 # Conditionally include downloads URLs to handle import errors gracefully
 # Downloads app may have dependencies that aren't available, so we handle it gracefully
