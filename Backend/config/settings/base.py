@@ -59,7 +59,6 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'apps.core.cors_middleware.CustomCorsMiddleware',  # Custom CORS - MUST be first to handle OPTIONS
-    'corsheaders.middleware.CorsMiddleware',  # Django CORS as backup (may be redundant but safe)
     'apps.core.middleware.AllowedHostsMiddleware',  # Must be before SecurityMiddleware
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -142,7 +141,7 @@ LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'UTC'
 
-USE_I18N = True
+USE_I18N = False
 
 USE_TZ = True
 

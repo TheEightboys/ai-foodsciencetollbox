@@ -217,18 +217,17 @@ export function AuthModal({ onClose }: AuthModalProps) {
         variant: "destructive",
       });
     } else {
+      // Sign-in succeeded. The AuthContext.signIn() already called setUser(),
+      // which makes ProtectedRoute re-render and unmount this modal naturally.
+      // The signingInRef guard in AuthContext suppresses any delayed Supabase
+      // onAuthStateChange events for 3 s, preventing a race that would clear
+      // the user. Do NOT call window.location.reload() — that reinitialises
+      // AuthContext from scratch, and if the Django backend is in a cold-start
+      // the session restore fails and the user ends up back on the auth card.
       if (onClose) {
         onClose();
-      } else {
-        // When rendered inside ProtectedRoute (no onClose), the auth context
-        // update should automatically hide this modal. Force a page reload
-        // after a short delay to guarantee the dashboard loads cleanly.
-        // This is the most reliable approach because Supabase's delayed
-        // onAuthStateChange events can momentarily reset auth state.
-        setTimeout(() => {
-          window.location.reload();
-        }, 300);
       }
+      // else: ProtectedRoute unmounts this component automatically via state update
     }
   };
 

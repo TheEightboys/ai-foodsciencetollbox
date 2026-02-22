@@ -9,11 +9,10 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
-from google_auth_oauthlib.flow import Flow
 import os
 import requests as _requests
+# google-auth and google-auth-oauthlib are imported lazily inside each view
+# to avoid loading ~50 MB of google libraries at Django startup on every request.
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, TeacherProfile, UserPreferences
@@ -36,6 +35,9 @@ class GoogleLoginView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request):
+        # Lazy imports — keeps these ~50 MB libraries out of startup memory
+        from google_auth_oauthlib.flow import Flow
+
         # Allow HTTP for local development
         if settings.DEBUG:
             os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -100,6 +102,11 @@ class GoogleCallbackView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request):
+        # Lazy imports — keeps these ~50 MB libraries out of startup memory
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+        from google_auth_oauthlib.flow import Flow
+
         # Allow HTTP for local development
         if settings.DEBUG:
             os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -260,6 +267,10 @@ class GoogleCodeExchangeView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
+        # Lazy imports — keeps these ~50 MB libraries out of startup memory
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+
         code = request.data.get('code')
         redirect_uri = request.data.get('redirect_uri')
 

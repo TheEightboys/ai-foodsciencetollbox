@@ -77,7 +77,7 @@ if DATABASE_URL:
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
-            conn_max_age=600,
+            conn_max_age=60,   # reduced from 600 — frees DB connections between requests on free plan
             conn_health_checks=True,
         )
     }

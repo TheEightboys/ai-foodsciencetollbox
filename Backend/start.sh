@@ -148,29 +148,23 @@ echo "DJANGO_SETTINGS_MODULE: ${DJANGO_SETTINGS_MODULE:-not set}"
 export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE:-config.settings.production}
 
 # Start Gunicorn - use exec to replace shell process
-# NOTE: Render free tier has only 512 MB RAM.
+# MEMORY OPTIMIZATIONS applied (target: stay under 512 MB on Render free):
 #
-# MEMORY BUDGET (512 MB limit):
-#   --preload was REMOVED because it loads the full Django app (~250 MB) into
-#   the master process. When the gthread worker forked, master (~250 MB) +
-#   worker copy-on-write growth (~280 MB) = ~530 MB → OS OOM killer sent
-#   SIGKILL → Gunicorn reported "WORKER TIMEOUT / Perhaps out of memory?".
-#
-#   Without --preload:
-#     master  : ~50 MB  (bare gunicorn, no app loaded)
-#     worker  : ~280 MB (loads Django app once, shared across 2 threads)
-#     total   : ~330 MB  ← comfortably under 512 MB
+#   1. gevent worker instead of gthread — async I/O, ~30–40% less memory than threads
+#   2. --worker-connections 50 — max concurrent greenlets (replaces --threads)
+#   3. google-auth libraries imported lazily in views (not at startup)
+#   4. USE_I18N=False, duplicate CORS middleware removed, conn_max_age=60
+#   5. No --preload — avoids master-process copy-on-write memory bloat
 #
 # CONCURRENCY:
-#   gthread with 2 threads lets the worker serve health checks and small
-#   requests while one thread is blocked waiting on OpenAI I/O, preventing
-#   the 30-second Render health-check kill loop.
+#   gevent handles concurrent I/O (OpenAI calls, DB queries, Google OAuth)
+#   without blocking, preventing the 30-second health-check kill loop.
 #   Timeout 300s covers slow AI generation calls.
 exec gunicorn config.wsgi:application \
     --bind 0.0.0.0:8000 \
-    --worker-class gthread \
+    --worker-class gevent \
     --workers 1 \
-    --threads 2 \
+    --worker-connections 50 \
     --timeout 300 \
     --graceful-timeout 30 \
     --keep-alive 5 \
