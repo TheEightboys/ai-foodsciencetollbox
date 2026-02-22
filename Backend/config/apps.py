@@ -11,7 +11,9 @@ class ConfigConfig(AppConfig):
     
     def ready(self):
         """Called when Django starts - apps are now loaded"""
-        # Setup admin site customization after apps are ready
-        from .admin import setup_admin_site
-        setup_admin_site()
+        # Setup admin site customization only when django.contrib.admin is installed
+        from django.apps import apps
+        if apps.is_installed('django.contrib.admin'):
+            from .admin import setup_admin_site
+            setup_admin_site()
 
